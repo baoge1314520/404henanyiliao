@@ -1,0 +1,30 @@
+server:
+  ssl:
+    enabled: false
+  port: 8081
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://192.168.109.130:5432/db1
+    username: postgres
+    password: 123456789
+    hikari:
+      minimum-idle: 8
+      maximum-pool-size: 20
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+logging:
+  level:
+    com.neuedu.mapper: debug
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://ws-9zdsmx8sl8gfyius.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+      api-key: sk-ws-H.YPLXDEP.dkyz.MEYCIQD9FA4le85B4PKrizy1iDY3X_XzctvVMufktl9oDSgT3QIhAJT31JvFsbihqwZx5vna9HYdf5JbmVoYi0sQPse7bMdQ
+      model-name: qwen-plus
+      timeout: 300000
+      log-requests: false
+      log-responses: false
