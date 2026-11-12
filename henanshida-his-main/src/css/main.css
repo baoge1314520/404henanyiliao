@@ -1,0 +1,290 @@
+/* ============================================================
+   河南师大 HIS · 全局设计系统
+   临床蓝主色 + 深色侧边栏 + 卡片化内容区
+   ============================================================ */
+
+:root {
+	/* 品牌色 */
+	--his-primary: #2563eb;
+	--his-primary-dark: #1d4ed8;
+	--his-primary-soft: #eef3fe;
+	--his-success: #10b981;
+	--his-warning: #f59e0b;
+	--his-danger: #ef4444;
+	--his-info: #64748b;
+
+	/* 中性色 */
+	--his-bg: #f1f5f9;
+	--his-card: #ffffff;
+	--his-text: #1e293b;
+	--his-text-2: #475569;
+	--his-text-3: #94a3b8;
+	--his-border: #e2e8f0;
+
+	/* 侧边栏 */
+	--his-side-top: #1e3a8a;
+	--his-side-bottom: #172554;
+
+	/* 圆角 / 阴影 */
+	--his-radius: 14px;
+	--his-radius-sm: 9px;
+	--his-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 24px rgba(15, 23, 42, .05);
+	--his-shadow-hover: 0 4px 12px rgba(15, 23, 42, .10), 0 16px 40px rgba(15, 23, 42, .08);
+
+	/* Element Plus 主题对齐 */
+	--el-color-primary: #2563eb;
+	--el-color-primary-light-3: #5b8bf0;
+	--el-color-primary-light-5: #93b4f5;
+	--el-color-primary-light-7: #c7d7fa;
+	--el-color-primary-light-8: #dbe6fc;
+	--el-color-primary-light-9: #eef3fe;
+	--el-color-primary-dark-2: #1d4ed8;
+	--el-color-success: #10b981;
+	--el-color-warning: #f59e0b;
+	--el-color-danger: #ef4444;
+	--el-color-error: #ef4444;
+	--el-color-info: #64748b;
+	--el-border-radius-base: 8px;
+	--el-border-radius-small: 6px;
+	--el-font-size-base: 14px;
+	--el-text-color-primary: #1e293b;
+	--el-text-color-regular: #475569;
+	--el-border-color: #e2e8f0;
+	--el-border-color-light: #e9eef5;
+	--el-fill-color-blank: #ffffff;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html {
+	font-size: 16px;
+	min-width: 1180px;
+}
+
+body {
+	font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	color: var(--his-text);
+	background: var(--his-bg);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+a {
+	text-decoration: none;
+	color: inherit;
+}
+
+ul li {
+	list-style: none;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+	width: 9px;
+	height: 9px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #cbd5e1;
+	border-radius: 8px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #94a3b8;
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* ---------- 通用卡片 / 页面骨架 ---------- */
+.his-card {
+	background: var(--his-card);
+	border-radius: var(--his-radius);
+	box-shadow: var(--his-shadow);
+	border: 1px solid var(--his-border);
+}
+
+.page {
+	padding: 20px 22px;
+	animation: his-fade .28s ease;
+}
+
+@keyframes his-fade {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.page-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 16px;
+}
+
+.page-header .ph-left {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.page-header .ph-icon {
+	width: 42px;
+	height: 42px;
+	border-radius: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-size: 22px;
+	background: linear-gradient(135deg, var(--his-primary), #60a5fa);
+	box-shadow: 0 6px 16px rgba(37, 99, 235, .28);
+}
+
+.page-header h2 {
+	font-size: 19px;
+	font-weight: 700;
+	letter-spacing: .3px;
+}
+
+.page-header .ph-sub {
+	font-size: 12.5px;
+	color: var(--his-text-3);
+	margin-top: 2px;
+}
+
+/* 搜索栏 */
+.search-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	padding: 16px 18px;
+	margin-bottom: 14px;
+}
+
+.search-bar .el-input,
+.search-bar .el-select {
+	width: 210px;
+}
+
+.search-bar .spacer {
+	flex: 1;
+}
+
+/* 表格卡片 */
+.table-card {
+	padding: 6px 6px 14px;
+	overflow: hidden;
+}
+
+.table-card .el-table {
+	--el-table-border-color: var(--his-border);
+	--el-table-header-bg-color: #f8fafc;
+	--el-table-header-text-color: #334155;
+	--el-table-row-hover-bg-color: #f5f8ff;
+	border-radius: 10px;
+}
+
+.table-card .el-table th.el-table__cell {
+	font-weight: 600;
+	height: 46px;
+}
+
+.table-card .el-table td.el-table__cell {
+	height: 50px;
+}
+
+.table-card .el-table .cell {
+	line-height: 1.5;
+}
+
+.pager {
+	display: flex;
+	justify-content: flex-end;
+	padding: 14px 12px 4px;
+}
+
+/* 标签 / 状态点 */
+.soft-tag {
+	border-radius: 6px;
+	font-weight: 500;
+}
+
+/* 金额 */
+.money {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+	color: var(--his-primary-dark);
+}
+
+.muted {
+	color: var(--his-text-3);
+}
+
+/* 空状态 */
+.his-empty {
+	padding: 40px 0;
+	text-align: center;
+	color: var(--his-text-3);
+}
+
+/* Element Plus 细节微调 */
+.el-button {
+	font-weight: 500;
+}
+
+.el-dialog {
+	border-radius: 16px;
+	overflow: hidden;
+	box-shadow: 0 24px 64px rgba(15, 23, 42, .22);
+}
+
+.el-dialog__header {
+	padding: 18px 22px;
+	margin-right: 0;
+	border-bottom: 1px solid var(--his-border);
+	background: linear-gradient(180deg, #fbfdff, #f5f8ff);
+}
+
+.el-dialog__title {
+	font-weight: 700;
+	font-size: 16px;
+}
+
+.el-dialog__body {
+	padding: 22px;
+}
+
+.el-dialog__footer {
+	padding: 14px 22px 20px;
+	border-top: 1px solid var(--his-border);
+}
+
+.el-message-box {
+	border-radius: 14px;
+}
+
+.el-tag {
+	border-radius: 6px;
+}
+
+/* 表单 */
+.el-form-item__label {
+	font-weight: 500;
+	color: var(--his-text-2);
+}

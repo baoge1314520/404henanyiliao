@@ -1,0 +1,26 @@
+<template>
+	<el-menu router>
+		<el-sub-menu index="system">
+			<template #title>系统管理</template>
+			<el-menu-item index="/dept">科室管理</el-menu-item>
+			<el-menu-item>医生管理</el-menu-item>
+			<el-menu-item>角色管理</el-menu-item>
+			<el-menu-item>菜单管理</el-menu-item>
+			<el-menu-item>字典管理</el-menu-item>
+		</el-sub-menu>
+		<el-sub-menu index="register">
+			<template #title>挂号就诊</template>
+			<el-menu-item>挂号管理</el-menu-item>
+			<el-menu-item>排班管理</el-menu-item>
+			<el-menu-item>叫号队列</el-menu-item>
+			<el-menu-item>分诊管理</el-menu-item>
+		</el-sub-menu>
+		<el-menu-item index="/ai">AI 问答</el-menu-item>
+	</el-menu>
+</template>
+
+<script setup>
+</script>
+
+<style scoped lang="scss">
+</style>
