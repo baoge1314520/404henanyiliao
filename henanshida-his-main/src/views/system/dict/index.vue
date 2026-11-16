@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysDict" title="字典" icon="Collection"
 		subtitle="维护系统数据字典，按字典类型分组管理标签与取值"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
 <script setup>
@@ -22,7 +22,6 @@ const searchFields = [
 ]
 
 const columns = [
-	{ prop: 'id', label: '编号', width: 80, align: 'center' },
 	{ prop: 'dictType', label: '字典类型', minWidth: 150 },
 	{ prop: 'dictLabel', label: '字典标签', minWidth: 130 },
 	{ prop: 'dictValue', label: '字典值', width: 110 },

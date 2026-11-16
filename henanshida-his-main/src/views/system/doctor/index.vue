@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysUser" title="医生" icon="User"
 		subtitle="维护医护人员档案，新增时设置登录密码，修改时留空则保持原密码"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" :action-width="170" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" :action-width="170" />
 </template>
 
 <script setup>
@@ -25,7 +25,6 @@ const searchFields = [
 ]
 
 const columns = computed(() => [
-	{ prop: 'id', label: '编号', width: 70, align: 'center' },
 	{ prop: 'realName', label: '姓名', minWidth: 100 },
 	{ prop: 'gender', label: '性别', width: 70, align: 'center', type: 'dict', dict: GENDER },
 	{ prop: 'employeeNo', label: '工号', width: 110 },

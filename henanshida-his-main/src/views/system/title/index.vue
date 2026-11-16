@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysTitle" title="职称" icon="Medal"
 		subtitle="维护医生职称与对应挂号级别、挂号费"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
 <script setup>
@@ -13,7 +13,6 @@ const searchFields = [
 ]
 
 const columns = [
-	{ prop: 'id', label: '编号', width: 80, align: 'center' },
 	{ prop: 'titleName', label: '职称名称', minWidth: 140 },
 	{ prop: 'regLevel', label: '挂号级别', minWidth: 140 },
 	{ prop: 'regFee', label: '挂号费', width: 110, align: 'right', type: 'money' },

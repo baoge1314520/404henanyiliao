@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysMenu" title="菜单" icon="Menu"
 		subtitle="维护系统导航菜单与路由路径，父菜单 ID 为 0 表示顶级"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
 <script setup>
@@ -14,7 +14,6 @@ const searchFields = [
 ]
 
 const columns = [
-	{ prop: 'id', label: '编号', width: 80, align: 'center' },
 	{ prop: 'menuName', label: '菜单名称', minWidth: 140 },
 	{ prop: 'parentId', label: '父菜单ID', width: 100, align: 'center' },
 	{ prop: 'path', label: '路由路径', minWidth: 140 },

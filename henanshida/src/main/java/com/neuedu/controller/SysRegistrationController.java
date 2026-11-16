@@ -38,11 +38,12 @@ public class SysRegistrationController {
 
     /**
      * 挂号：患者信息与挂号信息一并提交，患者已存在则只保存挂号记录。
+     * 成功后返回保存的挂号记录（含 id / regNo / regFee），供前端发起支付宝支付。
      */
     @PostMapping("add")
     Result add(SysRegistration registration, SysPatient patient) {
         boolean success = sysRegistrationService.add(registration, patient);
-        return success ? Result.success(true, "挂号成功") : Result.fail("患者姓名不能为空");
+        return success ? Result.success(registration, "挂号成功") : Result.fail("患者姓名不能为空");
     }
 
     @GetMapping("getInfo")

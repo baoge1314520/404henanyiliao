@@ -208,8 +208,10 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
         if (StringUtils.isBlank(registration.getRegNo())) {
             registration.setRegNo(generateRegNo());
         }
+        // 新挂号默认"待支付"(0)：只有支付宝支付成功回调后才改为"待就诊"(1)，
+        // 未支付的单子不会进入叫号队列/待就诊区（queue 按 status=1 过滤）。
         if (StringUtils.isBlank(registration.getStatus())) {
-            registration.setStatus("1");
+            registration.setStatus("0");
         }
         return this.save(registration);
     }

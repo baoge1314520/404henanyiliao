@@ -97,6 +97,12 @@
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
         </dependency>
+        <!-- 支付宝开放平台官方 SDK：电脑网站支付 alipay.trade.page.pay -->
+        <dependency>
+            <groupId>com.alipay.sdk</groupId>
+            <artifactId>alipay-sdk-java</artifactId>
+            <version>4.40.1067.ALL</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>

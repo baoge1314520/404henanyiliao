@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysPatient" title="患者" icon="UserFilled"
 		subtitle="维护患者档案，身份证号唯一，挂号时可自动复用"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
 <script setup>
@@ -14,7 +14,6 @@ const searchFields = [
 ]
 
 const columns = [
-	{ prop: 'id', label: '编号', width: 80, align: 'center' },
 	{ prop: 'patientName', label: '姓名', minWidth: 110 },
 	{ prop: 'gender', label: '性别', width: 80, align: 'center', type: 'dict', dict: GENDER },
 	{ prop: 'birthday', label: '出生日期', width: 130 },

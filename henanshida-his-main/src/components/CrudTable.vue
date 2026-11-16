@@ -46,7 +46,7 @@
 		<!-- 表格 -->
 		<div class="his-card table-card" v-loading="loading">
 			<el-table :data="records" stripe style="width: 100%" :row-key="rowKey" empty-text="暂无数据">
-				<el-table-column v-if="showIndex" type="index" label="#" width="60" align="center" />
+				<el-table-column v-if="showIndex" type="index" label="序号" width="70" align="center" :index="rowIndex" />
 				<template v-for="col in columns" :key="col.prop">
 					<el-table-column
 						:prop="col.prop" :label="col.label"
@@ -206,6 +206,11 @@ function fmtMoney(v) {
 	return isNaN(n) ? '0.00' : n.toFixed(2)
 }
 
+// 序号列：跨分页连续编号（第 2 页从 pageSize+1 开始），不依赖数据库主键
+function rowIndex(i) {
+	return (pageNo.value - 1) * pageSizeRef.value + i + 1
+}
+
 // 解析下拉选项：静态 options / 远程 optionsApi / 自定义 loadOptions
 async function resolveOptions() {
 	const all = [...props.searchFields, ...props.fields]
@@ -322,7 +327,7 @@ function save() {
 function toggle(row) {
 	const action = row.enabled ? '禁用' : '启用'
 	ElMessageBox.confirm(
-		`确定${action}该${title}吗？` + (row.enabled ? '禁用后数据仍保留，可随时恢复。' : ''),
+		`确定${action}该${props.title}吗？` + (row.enabled ? '禁用后数据仍保留，可随时恢复。' : ''),
 		'提示', { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
 	).then(() => {
 		loading.value = true

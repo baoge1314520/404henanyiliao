@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysSchedule" title="排班" icon="Calendar"
 		subtitle="安排医生出诊日期、时段与号源数量"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
 <script setup>
@@ -27,7 +27,6 @@ const searchFields = [
 ]
 
 const columns = computed(() => [
-	{ prop: 'id', label: '编号', width: 70, align: 'center' },
 	{ prop: 'doctorId', label: '医生', minWidth: 110, type: 'dict', dict: doctorMap.value },
 	{ prop: 'deptId', label: '科室', minWidth: 120, type: 'dict', dict: deptMap.value },
 	{ prop: 'scheduleDate', label: '排班日期', width: 130 },

@@ -30,6 +30,7 @@
 						<el-breadcrumb-item v-if="route.meta.group">{{ route.meta.group }}</el-breadcrumb-item>
 						<el-breadcrumb-item>{{ route.meta.title || '工作台' }}</el-breadcrumb-item>
 					</el-breadcrumb>
+					<el-tag type="warning" effect="plain" size="small" round style="margin-left: 10px">演示数据</el-tag>
 				</div>
 				<div class="tb-right">
 					<el-tooltip content="刷新页面" placement="bottom">

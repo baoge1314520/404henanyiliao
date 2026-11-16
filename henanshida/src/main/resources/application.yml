@@ -11,6 +11,13 @@ spring:
     hikari:
       minimum-idle: 8
       maximum-pool-size: 20
+      # 数据库在虚拟机里，NAT/休眠会掐断空闲 TCP 连接，池里会留下死连接，
+      # 下次请求拿到死连接就抛异常 -> 前端"系统异常,请联系管理员"。
+      # 缩短连接存活时间并主动保活，让死连接在被借用前就回收/探活。
+      max-lifetime: 300000
+      keepalive-time: 120000
+      validation-timeout: 3000
+      connection-timeout: 10000
   data:
     redis:
       host: 127.0.0.1
@@ -28,3 +35,16 @@ langchain4j:
       timeout: 300000
       log-requests: false
       log-responses: false
+
+# 支付宝电脑网站支付（沙箱）。把下面三行密钥换成你开放平台「研发-沙箱」里的值后重启后端即可。
+# 私钥/公钥是账号专属机密，交作业前记得替换成占位符或删除本段，不要上传到公开仓库。
+alipay:
+  gateway: https://openapi-sandbox.dl.alipaydev.com/gateway.do
+  app-id: 9021000171691494           # 例：9021000123456789
+  private-key: MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCi7nY7muzRecFi0E1RNvl3cBvdDQpCKvVYzcYsiuMFPXkLXZY9mVEMkcTZ8kDdX/jYz/vBrW8gtDhestdTlwGJD+J35VzFohjxVi5gUs97ZzrAAJTp/DjpdRG6+94J43kp9/eKRvdCUEIrE8nYNXdiIqDSNFR8OGrhVptRl6GkLan9fJYPLJTb62BulVomYd6F0/KtReA37YFqPbNvDKD4TT2DN28oKT/Tr1owfduvVDwUONdD4DXrfhQGusAEp0oHOACWhvAvVhn1/2vDD32EH5FJSGuB/h5z7CDTHfwTQeMZ7Yg8lG5wLC7rhDp4fhURcO0UNfmsguylZwNaBOWBAgMBAAECggEAGD/ZhQGH4Z13dNd/ymieNHKRExNPxY1TOsZVimeZZjxB+bkSFVTuRSqk27M8iDYyeUJrO+YuNfXctet0NNKyvc2JbULLzfZUNAcZm+h3TOyOR+lOQIzzg3uTCftWjq42aFKpmwD45/u9/V9SmUVL4WU5/k8fi+VxstwK/dfNjPuolAVuVK36j7EOLF3w2jl0I7zdyfk/TBGGTna8ro5MSNuKBkR6pYniMzQhl5oYRQClf3+BZZAjw6PlK5DInHAQyOkKHk/5mjKO6rO2OyLqhlllrLRGCVqxNyI02dI8EyNlaWBl5d2pKVfQK3j0TLQI7N5QTjl4iFHXceVdtBV86QKBgQD/OJTick3FGhbTo85ackFHnKWehiTxoYfSWwL6gZ89Y3bPh7b4b40NyPWF3hSDzytbLtFxAtuLkMQoXJgP4L/I9ogDac69nOQjGyexw3cVSiFDs/Fvqh927D7o6q3QrFe8Q0UPilYtPLP0C3fzg8NlL9qGxPPPooYAxdknB85eZwKBgQCjbcTxcdHC2lqQUv0+KfZTD5QESqNW59eUf8u5yS6+rQps4puT5+QQGp8/drDx2zOS1nhUpC+52FjKWMZ0ywTQkFnS4jtgIUUOE06K1seNnp8H300mAOYX3awrQb/1gon5Jpt5ARi/uy/Alth5aLnoz397jfBc6Jf8n/dGDZNb1wKBgQCepGwfag+fYf0oZtzg6b5cJinopNeX/uEvR3VNg38ZKJd0npaETMqv8+dx4756xC7eCfcUOUOAuGbF8/BthjWQVHXtMTraMAi7Laj53VdLO3372IFN+MCAKo9cNmv+lvIeSu5Fn6a7jc0J+IsCKjgt0JYUSZ6HxS1ok5LMqRSFJwKBgFa14wyH61eLKwnwPlVBRmSDm3E7eLafhA5ST/FfAOJCRYnIIeuz2ZmBxoSRoQhx2UdLa8Tc6EWeuF2EBKfrH77ZGA9/4Sj7/fud2spncrF9O7udiv1i9LIs9zBsTkEg5bu/9DWbk1oHIyr33htsqVcQ4P7ZLHLfJeTvqu8MPOc5AoGBAPfuE3TJeM6k76tmR7ZTfJsEDpAiSjCJ4HA3lvf0wxdn0gGH8i5Ym7vUlQvVlQYLgBt9mlkxWibBwnqajsjA1tAJtwRnJB9CKiBWjU/90qxFV6gqsLDQjFQRVpPNHLZ2wIDSUQ0mvNYU+qEWcvSV12l3tXFWdWsZETR4dypf/vnp     # 长串 base64，不含 -----BEGIN/END----- 标记
+  alipay-public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoVE4rIQI6kZFBXJFtWhlsEsPU7lAMMSat1LRWITL+bCnaoI7axOhxfZaVFQSVvM4vYlPaiQmfbxisw+wjjXPxJ/9bzs1RaSOXat2ufw1h+j6fnGgnb6AHrILceJIXmvSx+OFQgfF9NIHnmFXkn+ZUYslqHfg5QMOYnXlFbWEK5c9wsuIE6wU0EBp43zXJX28NtcNSzwobc9xS0U/f5i4UaONOINH6plB9XfCRg/w7DI8f4oIy1MZGkaRz0BDcdfJ4tnaMy8nS/jML4O5RE2kvcs3RvYVWmlx77bf71x4VOKDlhFVtsMRLMm7xoC/0FYJy2MUcYCGo0T5VbSBK94oXQIDAQAB  # 注意是“支付宝公钥”不是“应用公钥”
+  notify-url: ""                       # 异步通知地址，本地演示可留空；需公网可用内网穿透
+  return-url: http://127.0.0.1:8081/alipay/return
+  sign-type: RSA2
+  charset: UTF-8
+

@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysDept" title="科室" icon="OfficeBuilding"
 		subtitle="维护医院科室档案，科室编码唯一，支持启用 / 禁用"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
 <script setup>
@@ -14,7 +14,6 @@ const searchFields = [
 ]
 
 const columns = [
-	{ prop: 'id', label: '编号', width: 80, align: 'center' },
 	{ prop: 'deptName', label: '科室名称', minWidth: 140 },
 	{ prop: 'deptCode', label: '科室编码', minWidth: 130 },
 	{ prop: 'deptType', label: '科室类别', width: 120, type: 'dict', dict: DEPT_TYPE },

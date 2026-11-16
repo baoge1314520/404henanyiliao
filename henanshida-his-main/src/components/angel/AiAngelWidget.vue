@@ -10,7 +10,9 @@
 					<div class="ab-head-avatar"><AngelBaby :size="34" animated /></div>
 					<div class="ab-head-meta">
 						<div class="ab-head-name">天使宝宝ai</div>
-						<div class="ab-head-sub"><span class="dot"></span> 在线 · 智能导诊助手</div>
+						<div class="ab-head-sub">
+							<span class="dot"></span> 在线 · 智能导诊助手
+						</div>
 					</div>
 				</div>
 				<div class="ab-head-actions">
@@ -246,7 +248,9 @@ function send() {
 	fd.append('message', text)
 	_axios.request({ url: '/ai/chat', method: 'POST', data: fd }).then(res => {
 		if (res.data.code === 200) {
-			messages.value.push({ role: 'assistant', text: res.data.content, time: nowTime() })
+			const c = res.data.content
+			const answer = typeof c === 'string' ? c : ((c && c.answer) || '')
+			messages.value.push({ role: 'assistant', text: answer, time: nowTime() })
 			if (store.visible) playChime(); else store.bump()
 		} else {
 			messages.value.push({ role: 'error', text: res.data.message || 'AI 服务返回错误', time: nowTime() })

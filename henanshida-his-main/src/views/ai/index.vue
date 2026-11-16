@@ -5,7 +5,7 @@
 				<div class="ph-icon"><el-icon><ChatDotRound /></el-icon></div>
 				<div>
 					<h2>AI 问答</h2>
-					<div class="ph-sub">基于大模型的医院信息系统智能助手，支持上下文连续对话</div>
+					<div class="ph-sub">基于大模型的智能助手，支持上下文连续对话</div>
 				</div>
 			</div>
 			<el-button type="danger" plain :icon="Delete" round :disabled="loading" @click="clear">清空对话</el-button>
@@ -94,7 +94,9 @@ function send() {
 	formData.append('message', text)
 	_axios.request({ url: '/ai/chat', method: 'POST', data: formData }).then(response => {
 		if (response.data.code === 200) {
-			messages.value.push({ role: 'assistant', text: response.data.content })
+			const c = response.data.content
+			const answer = typeof c === 'string' ? c : ((c && c.answer) || '')
+			messages.value.push({ role: 'assistant', text: answer })
 		} else {
 			messages.value.push({ role: 'error', text: response.data.message || 'AI 服务返回错误' })
 		}

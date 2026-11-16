@@ -16,6 +16,7 @@
 			<el-input v-model="filters.patientName" placeholder="请输入患者姓名" clearable @keyup.enter="search" @clear="search" />
 			<el-date-picker v-model="filters.regDate" type="date" value-format="YYYY-MM-DD" placeholder="就诊日期" @change="search" />
 			<el-select v-model="filters.status" placeholder="挂号状态" clearable @change="search">
+				<el-option label="待支付" value="0" />
 				<el-option label="待就诊" value="1" />
 				<el-option label="已就诊" value="2" />
 				<el-option label="已取消" value="3" />
@@ -46,7 +47,11 @@
 				</el-table-column>
 				<el-table-column label="操作" width="170" fixed="right" align="center">
 					<template #default="{ row }">
-						<template v-if="row.status === '1'">
+						<template v-if="row.status === '0'">
+							<el-button link type="primary" :icon="CreditCard" @click="pay(row)">去支付</el-button>
+							<el-button link type="danger" :icon="CircleClose" @click="cancel(row)">取消</el-button>
+						</template>
+						<template v-else-if="row.status === '1'">
 							<el-button link type="success" :icon="CircleCheck" @click="finish(row)">就诊</el-button>
 							<el-button link type="danger" :icon="CircleClose" @click="cancel(row)">取消</el-button>
 						</template>
@@ -160,7 +165,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { _axios } from '@/util/axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, RefreshLeft, CircleCheck, CircleClose, UserFilled, FirstAidKit, Tickets } from '@element-plus/icons-vue'
+import { Plus, Search, RefreshLeft, CircleCheck, CircleClose, UserFilled, FirstAidKit, Tickets, CreditCard } from '@element-plus/icons-vue'
 import { REG_PERIOD } from '@/util/options'
 
 const loading = ref(false)
@@ -184,6 +189,7 @@ const regForm = reactive({
 	deptId: '', doctorId: '', regDate: todayStr, regPeriod: '1', regType: '1', remark: ''
 })
 const regRules = {
+	idCard: [{ required: true, message: '请输入身份证号（患者档案唯一标识）', trigger: 'blur' }],
 	patientName: [{ required: true, message: '请输入患者姓名', trigger: 'blur' }],
 	doctorId: [{ required: true, message: '请选择就诊医生', trigger: 'change' }],
 	regDate: [{ required: true, message: '请选择就诊日期', trigger: 'change' }]
@@ -203,7 +209,7 @@ const feeHint = computed(() => {
 
 function money(v) { const n = Number(v); return isNaN(n) ? '0.00' : n.toFixed(2) }
 function statusTag(s) {
-	return ({ 1: { text: '待就诊', type: 'warning' }, 2: { text: '已就诊', type: 'success' }, 3: { text: '已取消', type: 'info' } })[s] || { text: '未知', type: 'info' }
+	return ({ 0: { text: '待支付', type: 'danger' }, 1: { text: '待就诊', type: 'warning' }, 2: { text: '已就诊', type: 'success' }, 3: { text: '已取消', type: 'info' } })[s] || { text: '未知', type: 'info' }
 }
 
 function fetchList() {
@@ -277,9 +283,26 @@ function submitReg() {
 				ElMessage.success(data.message || '挂号成功')
 				regVisible.value = false
 				fetchList()
+				// 挂号成功后拿记录 id 发起支付宝电脑网站支付，跳转沙箱收银台
+				const regId = data.content && data.content.id
+				if (regId) goAlipay(regId)
 			} else ElMessage.error(data.message || '挂号失败')
 		}).catch(() => ElMessage.error('网络异常，挂号失败')).finally(() => { saving.value = false })
 	})
+}
+
+// 请求后端生成支付宝收银台 URL 并在新标签打开；支付失败不影响已完成的挂号
+function goAlipay(regId) {
+	const fd = new FormData()
+	fd.append('regId', regId)
+	_axios.request({ url: '/alipay/pay', method: 'POST', data: fd }).then(({ data }) => {
+		if (data.code === 200 && data.content) {
+			ElMessage.info('正在跳转支付宝收银台…')
+			window.open(data.content, '_blank')
+		} else {
+			ElMessage.warning('挂号已完成，但生成支付地址失败：' + (data.message || '请检查后端 alipay 沙箱密钥配置'))
+		}
+	}).catch(() => ElMessage.warning('挂号已完成，但支付请求失败，请确认后端已重启并填好支付宝配置'))
 }
 
 function act(row, url, action) {
@@ -295,6 +318,8 @@ function act(row, url, action) {
 }
 function finish(row) { act(row, '/sysRegistration/finish', '完成就诊') }
 function cancel(row) { act(row, '/sysRegistration/cancel', '取消挂号') }
+// 待支付单子重新打开支付宝收银台（沙箱偶发 502 时可在此重试）
+function pay(row) { goAlipay(row.id) }
 
 onMounted(() => { loadBase(); fetchList() })
 </script>

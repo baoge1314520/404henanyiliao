@@ -2,7 +2,7 @@
 	<crud-table
 		api="/sysRole" title="角色" icon="Avatar"
 		subtitle="维护系统角色与权限编码，用于多角色访问控制"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :show-index="false" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
 <script setup>
@@ -13,7 +13,6 @@ const searchFields = [
 ]
 
 const columns = [
-	{ prop: 'id', label: '编号', width: 80, align: 'center' },
 	{ prop: 'roleName', label: '角色名称', minWidth: 140 },
 	{ prop: 'roleCode', label: '角色编码', minWidth: 140 },
 	{ prop: 'remark', label: '备注', minWidth: 200 },
