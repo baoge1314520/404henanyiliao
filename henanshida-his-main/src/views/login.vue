@@ -79,7 +79,21 @@
 					<el-icon :size="26"><FirstAidKit /></el-icon>
 				</div>
 				<h2 class="form-title">{{ mode === 'login' ? '欢迎登录' : '创建账号' }}</h2>
-				<p class="form-sub">{{ mode === 'login' ? '河南师大医院管理系统' : '注册后即可登录使用全部功能' }}</p>
+				<p class="form-sub">{{ formSub }}</p>
+
+				<!-- 角色选择：管理员 / 患者用户 -->
+				<div class="role-switch">
+					<button type="button" :class="{ on: role === 'admin' }" @click="switchRole('admin')">
+						<el-icon :size="18"><Monitor /></el-icon>
+						<span class="role-name">管理员</span>
+						<span class="role-sub">医护 / 管理端</span>
+					</button>
+					<button type="button" :class="{ on: role === 'patient' }" @click="switchRole('patient')">
+						<el-icon :size="18"><Avatar /></el-icon>
+						<span class="role-name">患者用户</span>
+						<span class="role-sub">在线挂号 / 就诊记录</span>
+					</button>
+				</div>
 
 				<!-- 模式切换 -->
 				<div class="mode-switch">
@@ -88,8 +102,8 @@
 					<span class="thumb" :style="{ transform: mode === 'login' ? 'translateX(0)' : 'translateX(100%)' }"></span>
 				</div>
 
-				<!-- 登录表单 -->
-					<el-form v-if="mode === 'login'" key="login" ref="loginRef" :model="loginForm" :rules="loginRules"
+				<!-- 管理员登录表单 -->
+					<el-form v-if="mode === 'login' && role === 'admin'" key="login" ref="loginRef" :model="loginForm" :rules="loginRules"
 						size="large" @keyup.enter="doLogin">
 						<el-form-item prop="username">
 							<el-input v-model="loginForm.username" placeholder="手机号 / 邮箱 / 工号" :prefix-icon="User" clearable />
@@ -112,8 +126,32 @@
 						</div>
 					</el-form>
 
-					<!-- 注册表单 -->
-					<el-form v-else key="register" ref="regRef" :model="regForm" :rules="regRules" size="large" @keyup.enter="doRegister">
+					<!-- 患者登录表单 -->
+					<el-form v-else-if="mode === 'login'" key="plogin" ref="pLoginRef" :model="pLoginForm" :rules="pLoginRules"
+						size="large" @keyup.enter="doLogin">
+						<el-form-item prop="phone">
+							<el-input v-model="pLoginForm.phone" placeholder="建档手机号" :prefix-icon="Iphone" maxlength="11" clearable />
+						</el-form-item>
+						<el-form-item prop="password">
+							<el-input v-model="pLoginForm.password" type="password" placeholder="密码（身份证号后 6 位）" :prefix-icon="Lock" show-password clearable />
+						</el-form-item>
+						<div class="row-between">
+							<el-checkbox v-model="remember">记住登录状态</el-checkbox>
+							<button class="link-btn" type="button" @click="forgot">忘记密码?</button>
+						</div>
+						<el-button class="submit-btn" type="primary" :loading="loading" @click="doLogin">
+							{{ loading ? '登录中…' : '立即登录' }} <el-icon v-if="!loading"><Right /></el-icon>
+						</el-button>
+						<div class="demo-card">
+							<div class="demo-title"><el-icon><InfoFilled /></el-icon> 演示患者账号（密码为身份证号后 6 位）</div>
+							<div class="demo-accounts">
+								<button v-for="a in patientDemoAccounts" :key="a.phone" type="button" @click="fillPatientDemo(a)">{{ a.name }} {{ a.phone }}</button>
+							</div>
+						</div>
+					</el-form>
+
+					<!-- 管理员注册表单 -->
+					<el-form v-else-if="role === 'admin'" key="register" ref="regRef" :model="regForm" :rules="regRules" size="large" @keyup.enter="doRegister">
 						<el-form-item prop="realName">
 							<el-input v-model="regForm.realName" placeholder="真实姓名" :prefix-icon="Postcard" clearable />
 						</el-form-item>
@@ -135,6 +173,27 @@
 						</el-button>
 						<div class="form-tip">注册即创建一个启用状态的医护账号，手机号将作为登录账号。</div>
 					</el-form>
+
+					<!-- 患者注册表单 -->
+					<el-form v-else key="pregister" ref="pRegRef" :model="pRegForm" :rules="pRegRules" size="large" @keyup.enter="doRegister">
+						<el-form-item prop="patientName">
+							<el-input v-model="pRegForm.patientName" placeholder="就诊人姓名" :prefix-icon="Postcard" clearable />
+						</el-form-item>
+						<el-form-item prop="phone">
+							<el-input v-model="pRegForm.phone" placeholder="手机号（用于登录）" :prefix-icon="Iphone" maxlength="11" clearable />
+						</el-form-item>
+						<el-form-item prop="idCard">
+							<el-input v-model="pRegForm.idCard" placeholder="身份证号（18 位）" :prefix-icon="CreditCard" maxlength="18" clearable />
+						</el-form-item>
+						<el-form-item prop="agree" class="agree-item">
+							<el-checkbox v-model="pRegForm.agree">我已阅读并同意</el-checkbox>
+							<button class="link-btn" type="button" @click="terms">《系统使用规范》</button>
+						</el-form-item>
+						<el-button class="submit-btn" type="primary" :loading="loading" @click="doRegister">
+							{{ loading ? '注册中…' : '建档并登录' }} <el-icon v-if="!loading"><Right /></el-icon>
+						</el-button>
+						<div class="form-tip">演示环境约定：建档后以手机号登录，登录密码为身份证号后 6 位。</div>
+					</el-form>
 			</div>
 			<div class="side-foot">© 2026 河南师大医院 · 毕业设计演示系统</div>
 		</div>
@@ -142,26 +201,53 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Lock, FirstAidKit, InfoFilled, Right, Iphone, Postcard } from '@element-plus/icons-vue'
+import { User, Lock, FirstAidKit, InfoFilled, Right, Iphone, Postcard, Monitor, Avatar, CreditCard } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { usePatientStore } from '@/stores/patient'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const patientStore = usePatientStore()
 
 const mode = ref('login')
+// 角色：admin 管理端 / patient 患者端，登录与注册都按角色分流
+const role = ref(route.query.role === 'patient' ? 'patient' : 'admin')
 const loading = ref(false)
 const remember = ref(true)
 const demoAccounts = ['13800000001', '13800000002', '13800000003']
+// 演示患者来自数据库真实建档数据，密码按约定取身份证后 6 位
+const patientDemoAccounts = [
+	{ name: '王建国', phone: '13810000000', password: '011000' },
+	{ name: '李秀兰', phone: '13810000001', password: '021001' },
+	{ name: '演示患者甲', phone: '13900000001', password: '000001' }
+]
+
+const formSub = computed(() => {
+	if (role.value === 'patient') {
+		return mode.value === 'login' ? '智慧院区 · 患者服务门户' : '建档后即可在线挂号、查询就诊记录'
+	}
+	return mode.value === 'login' ? '河南师大医院管理系统' : '注册后即可登录使用全部功能'
+})
 
 const loginRef = ref(null)
 const loginForm = reactive({ username: '', password: '' })
 const loginRules = {
 	username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
 	password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}
+
+const pLoginRef = ref(null)
+const pLoginForm = reactive({ phone: '', password: '' })
+const pLoginRules = {
+	phone: [
+		{ required: true, message: '请输入建档手机号', trigger: 'blur' },
+		{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
+	],
+	password: [{ required: true, message: '请输入密码（身份证后 6 位）', trigger: 'blur' }]
 }
 
 const regRef = ref(null)
@@ -191,12 +277,39 @@ const regRules = {
 	]
 }
 
+const pRegRef = ref(null)
+const pRegForm = reactive({ patientName: '', phone: '', idCard: '', agree: false })
+const pRegRules = {
+	patientName: [{ required: true, message: '请输入就诊人姓名', trigger: 'blur' }],
+	phone: [
+		{ required: true, message: '请输入手机号', trigger: 'blur' },
+		{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
+	],
+	idCard: [
+		{ required: true, message: '请输入身份证号', trigger: 'blur' },
+		{ pattern: /^\d{17}[\dXx]$/, message: '身份证号需为 18 位（末位可为 X）', trigger: 'blur' }
+	],
+	agree: [
+		{
+			validator: (rule, value, cb) => (value ? cb() : cb(new Error('请先同意系统使用规范'))),
+			trigger: 'change'
+		}
+	]
+}
+
 function switchMode(m) {
 	mode.value = m
+}
+function switchRole(r) {
+	role.value = r
 }
 function fillDemo(a) {
 	loginForm.username = a
 	loginForm.password = '123456'
+}
+function fillPatientDemo(a) {
+	pLoginForm.phone = a.phone
+	pLoginForm.password = a.password
 }
 function forgot() {
 	ElMessageBox.alert('演示环境暂不开放自助重置，请联系系统管理员重置密码。', '忘记密码', { confirmButtonText: '知道了' })
@@ -206,21 +319,32 @@ function terms() {
 }
 
 function redirectAfterAuth() {
-	const redirect = route.query.redirect || '/dashboard'
+	const fallback = role.value === 'patient' ? '/patient/home' : '/dashboard'
+	let redirect = route.query.redirect || fallback
+	// 角色与目标页面不匹配时回落到各自首页，避免患者跳进管理端（反之亦然）
+	if (role.value === 'patient' && !redirect.startsWith('/patient')) redirect = fallback
+	if (role.value === 'admin' && redirect.startsWith('/patient')) redirect = fallback
 	router.replace(redirect)
 }
 
 async function doLogin() {
-	if (!loginRef.value) return
-	await loginRef.value.validate(async valid => {
+	const isPatient = role.value === 'patient'
+	const formRef = isPatient ? pLoginRef.value : loginRef.value
+	if (!formRef) return
+	await formRef.validate(async valid => {
 		if (!valid) return
 		loading.value = true
 		try {
-			const res = await userStore.login(loginForm.username.trim(), loginForm.password)
+			const account = isPatient ? pLoginForm.phone.trim() : loginForm.username.trim()
+			const password = isPatient ? pLoginForm.password : loginForm.password
+			const res = isPatient
+				? await patientStore.login(account, password)
+				: await userStore.login(account, password)
 			if (res.ok) {
-				if (remember.value) localStorage.setItem('his_remember_user', loginForm.username.trim())
-				else localStorage.removeItem('his_remember_user')
-				ElMessage.success('登录成功，欢迎回来')
+				const rememberKey = isPatient ? 'his_remember_patient' : 'his_remember_user'
+				if (remember.value) localStorage.setItem(rememberKey, account)
+				else localStorage.removeItem(rememberKey)
+				ElMessage.success(isPatient ? '登录成功，欢迎使用患者服务门户' : '登录成功，欢迎回来')
 				redirectAfterAuth()
 			} else {
 				ElMessage.error(res.message)
@@ -234,19 +358,27 @@ async function doLogin() {
 }
 
 async function doRegister() {
-	if (!regRef.value) return
-	await regRef.value.validate(async valid => {
+	const isPatient = role.value === 'patient'
+	const formRef = isPatient ? pRegRef.value : regRef.value
+	if (!formRef) return
+	await formRef.validate(async valid => {
 		if (!valid) return
 		loading.value = true
 		try {
-			const res = await userStore.register({
-				realName: regForm.realName.trim(),
-				phone: regForm.phone.trim(),
-				password: regForm.password,
-				confirm: regForm.confirm
-			})
+			const res = isPatient
+				? await patientStore.register({
+					patientName: pRegForm.patientName.trim(),
+					phone: pRegForm.phone.trim(),
+					idCard: pRegForm.idCard.trim()
+				})
+				: await userStore.register({
+					realName: regForm.realName.trim(),
+					phone: regForm.phone.trim(),
+					password: regForm.password,
+					confirm: regForm.confirm
+				})
 			if (res.ok) {
-				ElMessage.success('注册成功，已自动登录')
+				ElMessage.success(isPatient ? '建档成功，已自动登录' : '注册成功，已自动登录')
 				redirectAfterAuth()
 			} else {
 				ElMessage.error(res.message)
@@ -262,6 +394,8 @@ async function doRegister() {
 onMounted(() => {
 	const saved = localStorage.getItem('his_remember_user')
 	if (saved) loginForm.username = saved
+	const savedPatient = localStorage.getItem('his_remember_patient')
+	if (savedPatient) pLoginForm.phone = savedPatient
 })
 </script>
 
@@ -425,15 +559,17 @@ onMounted(() => {
 	flex: 1;
 	position: relative;
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 40px;
+	padding: 40px 40px 68px;
 	background: #fff;
+	/* 窗口矮时表单可滚动，避免内容被裁切 */
+	overflow-y: auto;
 }
 
 .form-card {
 	width: 100%;
 	max-width: 400px;
+	/* 空间够时居中，不够时从顶部开始滚动（flex 居中溢出的经典解法） */
+	margin: auto;
 }
 
 .form-logo {
@@ -460,6 +596,63 @@ onMounted(() => {
 	font-size: 13.5px;
 	color: #94a3b8;
 	margin-bottom: 24px;
+}
+
+/* 角色选择：管理员 / 患者用户 */
+.role-switch {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+	margin-bottom: 16px;
+
+	button {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 2px;
+		padding: 10px 14px;
+		border: 1.5px solid #e2e8f0;
+		border-radius: 12px;
+		background: #fff;
+		cursor: pointer;
+		text-align: left;
+		transition: all .2s;
+		color: #64748b;
+
+		.el-icon {
+			margin-bottom: 2px;
+		}
+
+		.role-name {
+			font-size: 14px;
+			font-weight: 700;
+			color: #334155;
+		}
+
+		.role-sub {
+			font-size: 11px;
+			color: #94a3b8;
+		}
+
+		&:hover {
+			border-color: #bfdbfe;
+		}
+
+		&.on {
+			border-color: #2563eb;
+			background: linear-gradient(135deg, #eff6ff, #dbeafe);
+			color: #2563eb;
+			box-shadow: 0 4px 12px rgba(37, 99, 235, .14);
+
+			.role-name {
+				color: #1d4ed8;
+			}
+
+			.role-sub {
+				color: #60a5fa;
+			}
+		}
+	}
 }
 
 .mode-switch {

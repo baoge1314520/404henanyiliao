@@ -2,7 +2,13 @@
 	<crud-table
 		api="/sysUser" title="医生" icon="User"
 		subtitle="维护医护人员档案，新增时设置登录密码，修改时留空则保持原密码"
-		:search-fields="searchFields" :columns="columns" :fields="fields" :action-width="170" />
+		:search-fields="searchFields" :columns="columns" :fields="fields" :action-width="170">
+		<template #avatar="{ row }">
+			<el-avatar :size="38" :src="row.avatar || undefined" class="doc-avatar">
+				{{ (row.realName || '医').charAt(0) }}
+			</el-avatar>
+		</template>
+	</crud-table>
 </template>
 
 <script setup>
@@ -25,6 +31,7 @@ const searchFields = [
 ]
 
 const columns = computed(() => [
+	{ prop: 'avatar', label: '头像', width: 76, align: 'center', slot: 'avatar', tooltip: false },
 	{ prop: 'realName', label: '姓名', minWidth: 100 },
 	{ prop: 'gender', label: '性别', width: 70, align: 'center', type: 'dict', dict: GENDER },
 	{ prop: 'employeeNo', label: '工号', width: 110 },
@@ -52,6 +59,15 @@ const fields = [
 	{ prop: 'birthday', label: '出生日期', type: 'date', span: 12 },
 	{ prop: 'enabled', label: '是否启用', type: 'switch', span: 12, defaultValue: true },
 	{ prop: 'address', label: '家庭住址', type: 'textarea', rows: 2 },
-	{ prop: 'intro', label: '医生简介', type: 'textarea', rows: 3, placeholder: '擅长治疗的疾病和症状' }
+	{ prop: 'intro', label: '医生简介', type: 'textarea', rows: 3, placeholder: '擅长治疗的疾病和症状' },
+	{ prop: 'avatar', label: '医生头像', type: 'image', span: 24, limit: 1, maxSize: 5 }
 ]
 </script>
+
+<style scoped>
+.doc-avatar {
+	background: linear-gradient(135deg, #2563eb, #60a5fa);
+	color: #fff;
+	font-weight: 600;
+}
+</style>

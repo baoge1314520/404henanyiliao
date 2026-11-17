@@ -55,11 +55,15 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
     private SysTitleService sysTitleService;
 
     @Override
-    public Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status) {
+    public Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status, Long patientId) {
         int no = pageNo == null ? 1 : pageNo;
         int size = pageSize == null ? 10 : pageSize;
 
         QueryWrapper wrapper = QueryWrapper.create();
+        // 患者端"我的挂号"：只查本人记录
+        if (patientId != null) {
+            wrapper.eq("patient_id", patientId);
+        }
         // 按患者姓名查询时，先查出患者ID集合，再过滤挂号记录
         if (StringUtils.isNotBlank(patientName)) {
             QueryWrapper patientWrapper = QueryWrapper.create();
@@ -170,10 +174,11 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean add(SysRegistration registration, SysPatient patient) {
-        Long patientId = null;
+        // 患者端登录挂号时直接带本人 patientId，无需再传患者档案
+        Long patientId = registration.getPatientId();
 
         // 身份证号已存在则复用患者档案，不重复保存
-        if (patient != null && StringUtils.isNotBlank(patient.getIdCard())) {
+        if (patientId == null && patient != null && StringUtils.isNotBlank(patient.getIdCard())) {
             SysPatient exist = sysPatientService.getByIdCard(patient.getIdCard());
             if (exist != null) {
                 patientId = exist.getId();
@@ -232,7 +237,7 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
 
     @Override
     public List<RegistrationVO> queue() {
-        Page<RegistrationVO> page = this.list(1, 500, null, null, "1");
+        Page<RegistrationVO> page = this.list(1, 500, null, null, "1", null);
         List<RegistrationVO> vos = new ArrayList<>(page.getRecords());
         // 未叫号的排前面，其余按就诊日期 + 挂号先后
         vos.sort((a, b) -> {

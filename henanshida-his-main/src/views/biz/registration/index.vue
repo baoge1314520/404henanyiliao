@@ -63,7 +63,7 @@
 				<el-pagination background layout="total, sizes, prev, pager, next, jumper"
 					:total="totalRow" :page-sizes="[10, 20, 50]"
 					v-model:current-page="pageNo" v-model:page-size="pageSize"
-					@current-change="fetchList" @size-change="onSize" />
+					@current-change="() => fetchList()" @size-change="onSize" />
 			</div>
 		</div>
 
@@ -124,6 +124,7 @@
 							<el-select v-model="regForm.doctorId" placeholder="请选择医生" filterable clearable style="width: 100%">
 								<el-option v-for="d in doctorList" :key="d.id" :label="d.realName" :value="d.id" />
 							</el-select>
+							<div v-if="regForm.deptId && doctorList.length === 0" class="no-doc-hint">该科室暂无启用医生，请先在「医生管理」中为其添加医生</div>
 						</el-form-item>
 					</el-col>
 					<el-col :span="12">
@@ -162,7 +163,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { _axios } from '@/util/axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, RefreshLeft, CircleCheck, CircleClose, UserFilled, FirstAidKit, Tickets, CreditCard } from '@element-plus/icons-vue'
@@ -196,8 +197,9 @@ const regRules = {
 }
 
 const doctorList = computed(() => {
-	if (!regForm.deptId) return doctors.value
-	return doctors.value.filter(d => d.deptId === regForm.deptId)
+	const on = doctors.value.filter(d => d.enabled !== false)
+	if (!regForm.deptId) return on
+	return on.filter(d => d.deptId === regForm.deptId)
 })
 
 const feeHint = computed(() => {
@@ -212,16 +214,16 @@ function statusTag(s) {
 	return ({ 0: { text: '待支付', type: 'danger' }, 1: { text: '待就诊', type: 'warning' }, 2: { text: '已就诊', type: 'success' }, 3: { text: '已取消', type: 'info' } })[s] || { text: '未知', type: 'info' }
 }
 
-function fetchList() {
-	loading.value = true
+function fetchList(silent) {
+	if (!silent) loading.value = true
 	const params = { pageNo: pageNo.value, pageSize: pageSize.value }
 	for (const k in filters) if (filters[k]) params[k] = filters[k]
 	_axios.request({ url: '/sysRegistration/list', method: 'GET', params }).then(({ data }) => {
 		if (data.code === 200) {
 			records.value = data.content?.records || []
 			totalRow.value = data.content?.totalRow || 0
-		} else ElMessage.error(data.message || '查询失败')
-	}).catch(() => ElMessage.error('网络异常，无法加载数据')).finally(() => { loading.value = false })
+		} else if (!silent) ElMessage.error(data.message || '查询失败')
+	}).catch(() => { if (!silent) ElMessage.error('网络异常，无法加载数据') }).finally(() => { if (!silent) loading.value = false })
 }
 function search() { pageNo.value = 1; fetchList() }
 function reset() { filters.patientName = ''; filters.regDate = ''; filters.status = ''; pageNo.value = 1; fetchList() }
@@ -321,7 +323,29 @@ function cancel(row) { act(row, '/sysRegistration/cancel', '取消挂号') }
 // 待支付单子重新打开支付宝收银台（沙箱偶发 502 时可在此重试）
 function pay(row) { goAlipay(row.id) }
 
-onMounted(() => { loadBase(); fetchList() })
+// 支付在别的标签完成：回到本页（focus/可见）立即静默刷新；仍有待支付单时轻量轮询兜底
+let pollTimer = null
+function syncPolling() {
+	const hasUnpaid = records.value.some(r => r.status === '0')
+	if (hasUnpaid && !pollTimer) {
+		pollTimer = setInterval(() => { if (!document.hidden) fetchList(true) }, 5000)
+	} else if (!hasUnpaid && pollTimer) {
+		clearInterval(pollTimer); pollTimer = null
+	}
+}
+watch(records, syncPolling)
+function onReturn() { if (!document.hidden) fetchList(true) }
+
+onMounted(() => {
+	loadBase(); fetchList()
+	window.addEventListener('focus', onReturn)
+	document.addEventListener('visibilitychange', onReturn)
+})
+onBeforeUnmount(() => {
+	window.removeEventListener('focus', onReturn)
+	document.removeEventListener('visibilitychange', onReturn)
+	if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+})
 </script>
 
 <style scoped lang="scss">
@@ -339,5 +363,12 @@ onMounted(() => { loadBase(); fetchList() })
 	.el-icon {
 		font-size: 16px;
 	}
+}
+
+.no-doc-hint {
+	font-size: 12px;
+	color: var(--el-color-danger);
+	line-height: 1.5;
+	margin-top: 4px;
 }
 </style>
