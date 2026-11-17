@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { _axios } from '@/util/axios'
-import { getToken, setToken, getUser, setUser, clearAuth } from '@/util/auth'
+import { getToken, setToken, getUser, setUser, setRole, clearAuth } from '@/util/auth'
 
 export const useUserStore = defineStore('user', {
 	state: () => ({
@@ -23,6 +23,7 @@ export const useUserStore = defineStore('user', {
 				this.user = data.content.user
 				setToken(this.token)
 				setUser(this.user)
+				setRole('admin')
 				return { ok: true }
 			}
 			return { ok: false, message: data.message || '登录失败' }
@@ -36,6 +37,7 @@ export const useUserStore = defineStore('user', {
 				this.user = data.content.user
 				setToken(this.token)
 				setUser(this.user)
+				setRole('admin')
 				return { ok: true }
 			}
 			return { ok: false, message: data.message || '注册失败' }

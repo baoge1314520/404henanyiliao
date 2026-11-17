@@ -1,7 +1,8 @@
 <template>
 	<crud-table
 		api="/sysPatient" title="患者" icon="UserFilled"
-		subtitle="维护患者档案，身份证号唯一，挂号时可自动复用"
+		subtitle="维护患者档案，身份证号唯一，挂号时可自动复用；患者端新注册自动同步"
+		:auto-refresh="8000"
 		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
