@@ -15,9 +15,9 @@ import com.neuedu.vo.RegistrationVO;
 public interface SysRegistrationService extends IService<SysRegistration> {
 
     /**
-     * 分页查询挂号记录（含患者、科室、医生、职称信息）。patientId 非空时只查该患者（患者端"我的挂号"）。
+     * 分页查询挂号记录（含患者、科室、医生、职称信息）。
      */
-    Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status, Long patientId);
+    Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status);
 
     /**
      * 挂号：患者不存在时与挂号记录一起保存，已存在则直接复用患者档案。

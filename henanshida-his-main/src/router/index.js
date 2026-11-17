@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { getToken, getRole } from '@/util/auth'
+import { getToken } from '@/util/auth'
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,51 +34,29 @@ const router = createRouter({
 			]
 		},
 		{
-			path: '/patient',
-			component: () => import('@/views/patient/shell.vue'),
-			redirect: '/patient/home',
-			children: [
-				{ path: '/patient/home', name: 'patientHome', component: () => import('@/views/patient/home.vue'), meta: { title: '首页', patient: true } },
-				{ path: '/patient/hall', name: 'patientHall', component: () => import('@/views/patient/hall.vue'), meta: { title: '挂号大厅', patient: true } },
-				{ path: '/patient/records', name: 'patientRecords', component: () => import('@/views/patient/records.vue'), meta: { title: '我的挂号', patient: true } }
-			]
-		},
-		{
 			path: '/:pathMatch(.*)*',
 			redirect: '/dashboard'
 		}
 	]
 })
 
-// 全局登录守卫：管理端与患者端按角色分流
+// 全局登录守卫
 router.beforeEach((to) => {
 	const hasToken = !!getToken()
-	const role = getRole()
 	if (to.meta.public) {
 		if (hasToken && to.path === '/login') {
-			return { path: role === 'patient' ? '/patient/home' : '/dashboard' }
-		}
-		return true
-	}
-	if (to.meta.patient) {
-		if (!hasToken || role !== 'patient') {
-			return { path: '/login', query: { redirect: to.fullPath, role: 'patient' } }
+			return { path: '/dashboard' }
 		}
 		return true
 	}
 	if (!hasToken) {
 		return { path: '/login', query: { redirect: to.fullPath } }
 	}
-	// 患者会话不允许进入管理端页面
-	if (role === 'patient') {
-		return { path: '/patient/home' }
-	}
 	return true
 })
 
 router.afterEach((to) => {
-	const brand = to.meta.patient ? '智慧院区 HIS' : '河南师大 HIS'
-	const title = to.meta.title ? `${to.meta.title} · ${brand}` : brand
+	const title = to.meta.title ? `${to.meta.title} · 河南师大 HIS` : '河南师大 HIS'
 	document.title = title
 })
 

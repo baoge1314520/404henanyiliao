@@ -24,8 +24,8 @@ public class SysRegistrationController {
     private SysRegistrationService sysRegistrationService;
 
     @GetMapping("list")
-    Result list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status, Long patientId) {
-        return Result.success(sysRegistrationService.list(pageNo, pageSize, patientName, regDate, status, patientId));
+    Result list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status) {
+        return Result.success(sysRegistrationService.list(pageNo, pageSize, patientName, regDate, status));
     }
 
     /**

@@ -30,7 +30,7 @@
 			<div class="his-card panel chart-panel">
 				<div class="panel-head">
 					<span class="panel-title"><el-icon><TrendCharts /></el-icon> 近 7 日挂号趋势</span>
-					<span class="panel-extra">单位：人次 · 每 10 秒自动更新</span>
+					<span class="panel-extra">单位：人次</span>
 				</div>
 				<svg :viewBox="`0 0 ${chart.W} ${chart.H}`" class="area-chart" preserveAspectRatio="none">
 					<defs>
@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { _axios } from '@/util/axios'
 import { useUserStore } from '@/stores/user'
@@ -228,62 +228,34 @@ async function count(url, params) {
 	}
 }
 
-// 拉取统计 + 两图 + 最新挂号；silent 为静默刷新（不转圈、失败不清空已有数据）
-let refreshing = false
-async function refresh(silent = false) {
-	if (refreshing) return
-	refreshing = true
-	if (!silent) loadingRecent.value = true
-	try {
-		const [dept, doctor, today, waiting, s2, s3, ...trendCounts] = await Promise.all([
-			count('/sysDept/list'),
-			count('/sysUser/list'),
-			count('/sysRegistration/list', { regDate: todayStr }),
-			count('/sysRegistration/list', { status: '1' }),
-			count('/sysRegistration/list', { status: '2' }),
-			count('/sysRegistration/list', { status: '3' }),
-			...days.map(d => count('/sysRegistration/list', { regDate: d }))
-		])
-		stats[0].value = dept
-		stats[1].value = doctor
-		stats[2].value = today
-		stats[3].value = waiting
-		statusDist[0].value = waiting ?? 0
-		statusDist[1].value = s2 ?? 0
-		statusDist[2].value = s3 ?? 0
-		trend.values = trendCounts.map(v => v ?? 0)
+onMounted(async () => {
+	const [dept, doctor, today, waiting, s2, s3, ...trendCounts] = await Promise.all([
+		count('/sysDept/list'),
+		count('/sysUser/list'),
+		count('/sysRegistration/list', { regDate: todayStr }),
+		count('/sysRegistration/list', { status: '1' }),
+		count('/sysRegistration/list', { status: '2' }),
+		count('/sysRegistration/list', { status: '3' }),
+		...days.map(d => count('/sysRegistration/list', { regDate: d }))
+	])
+	stats[0].value = dept
+	stats[1].value = doctor
+	stats[2].value = today
+	stats[3].value = waiting
+	statusDist[0].value = waiting ?? 0
+	statusDist[1].value = s2 ?? 0
+	statusDist[2].value = s3 ?? 0
+	trend.values = trendCounts.map(v => v ?? 0)
 
+	loadingRecent.value = true
+	try {
 		const { data } = await _axios.request({ url: '/sysRegistration/list', method: 'GET', params: { pageNo: 1, pageSize: 6 } })
 		if (data.code === 200) recent.value = data.content?.records || []
-		else if (!silent) recent.value = []
 	} catch {
-		if (!silent) recent.value = []
+		recent.value = []
 	} finally {
-		refreshing = false
 		loadingRecent.value = false
 	}
-}
-
-// 回到窗口 / 标签页时立即静默刷新
-function onWake() {
-	if (document.visibilityState === 'visible') refresh(true)
-}
-
-let timer = null
-onMounted(() => {
-	refresh()
-	// 挂号、支付、退号随时在发生：每 10 秒静默同步一次两图与统计
-	timer = setInterval(() => {
-		if (document.visibilityState === 'visible') refresh(true)
-	}, 10000)
-	window.addEventListener('focus', onWake)
-	document.addEventListener('visibilitychange', onWake)
-})
-
-onBeforeUnmount(() => {
-	clearInterval(timer)
-	window.removeEventListener('focus', onWake)
-	document.removeEventListener('visibilitychange', onWake)
 })
 </script>
 

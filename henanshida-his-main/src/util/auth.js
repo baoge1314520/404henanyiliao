@@ -1,7 +1,6 @@
-// 登录态本地持久化：token + 用户信息 + 当前角色（admin 管理端 / patient 患者端）
+// 登录态本地持久化：token + 用户信息
 const TOKEN_KEY = 'his_token'
 const USER_KEY = 'his_user'
-const ROLE_KEY = 'his_role'
 
 export function getToken() {
 	return localStorage.getItem(TOKEN_KEY) || ''
@@ -23,16 +22,7 @@ export function setUser(user) {
 	localStorage.setItem(USER_KEY, JSON.stringify(user || null))
 }
 
-export function getRole() {
-	return localStorage.getItem(ROLE_KEY) === 'patient' ? 'patient' : 'admin'
-}
-
-export function setRole(role) {
-	localStorage.setItem(ROLE_KEY, role === 'patient' ? 'patient' : 'admin')
-}
-
 export function clearAuth() {
 	localStorage.removeItem(TOKEN_KEY)
 	localStorage.removeItem(USER_KEY)
-	localStorage.removeItem(ROLE_KEY)
 }

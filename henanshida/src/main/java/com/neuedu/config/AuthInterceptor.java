@@ -31,19 +31,13 @@ public class AuthInterceptor implements HandlerInterceptor {
             token = request.getHeader("token");
         }
         Long userId = tokenService.resolve(token);
-        if (userId != null) {
-            request.setAttribute("userId", userId);
-            return true;
+        if (userId == null) {
+            response.setStatus(200);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"content\":null,\"message\":\"未登录或登录已过期\"}");
+            return false;
         }
-        // 患者端令牌：与管理端隔离，只标记 patientId，患者端接口据此校验归属
-        Long patientId = tokenService.resolvePatient(token);
-        if (patientId != null) {
-            request.setAttribute("patientId", patientId);
-            return true;
-        }
-        response.setStatus(200);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"code\":401,\"content\":null,\"message\":\"未登录或登录已过期\"}");
-        return false;
+        request.setAttribute("userId", userId);
+        return true;
     }
 }

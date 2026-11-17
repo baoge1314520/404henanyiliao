@@ -88,7 +88,7 @@
 					background layout="total, sizes, prev, pager, next, jumper"
 					:total="totalRow" :page-sizes="[10, 20, 50, 100]"
 					v-model:current-page="pageNo" v-model:page-size="pageSizeRef"
-					@current-change="onPageChange" @size-change="onSizeChange" />
+					@current-change="fetchList" @size-change="onSizeChange" />
 			</div>
 		</div>
 
@@ -114,22 +114,6 @@
 									v-else-if="f.type === 'date'"
 									v-model="form[f.prop]" type="date" value-format="YYYY-MM-DD"
 									:placeholder="f.placeholder || `请选择${f.label}`" style="width: 100%" />
-								<el-upload
-									v-else-if="f.type === 'image'"
-									class="his-uploader"
-									action="#"
-									list-type="picture-card"
-									accept="image/*"
-									:limit="f.limit || 1"
-									:multiple="false"
-									v-model:file-list="uploadFiles[f.prop]"
-									:http-request="(opt) => doUpload(opt, f)"
-									:before-upload="(file) => beforeImageUpload(file, f)"
-									:on-preview="previewImage"
-									:on-remove="(file) => removeImage(file, f)"
-									:on-exceed="onImageExceed">
-									<el-icon><Plus /></el-icon>
-								</el-upload>
 								<el-input
 									v-else-if="f.type === 'textarea'"
 									v-model="form[f.prop]" type="textarea" :rows="f.rows || 3"
@@ -149,16 +133,11 @@
 				<el-button type="primary" :loading="saving" @click="save">保存</el-button>
 			</template>
 		</el-dialog>
-
-		<!-- 头像预览 -->
-		<el-dialog v-model="previewVisible" title="头像预览" width="420px" append-to-body>
-			<img :src="previewUrl" alt="头像预览" class="preview-img" />
-		</el-dialog>
 	</div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { _axios } from '@/util/axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, RefreshLeft, Edit, Delete, CircleCheck } from '@element-plus/icons-vue'
@@ -176,9 +155,7 @@ const props = defineProps({
 	pageSize: { type: Number, default: 10 },
 	actionWidth: { type: [String, Number], default: 160 },
 	// 列表查询额外固定参数
-	extraParams: { type: Object, default: () => ({}) },
-	// 静默自动刷新间隔（毫秒），0 表示关闭；开启后定时 + 回到窗口自动同步列表
-	autoRefresh: { type: Number, default: 0 }
+	extraParams: { type: Object, default: () => ({}) }
 })
 
 const loading = ref(false)
@@ -194,10 +171,6 @@ const dialogVisible = ref(false)
 const mode = ref('add')
 const formRef = ref(null)
 const form = reactive({})
-// 图片字段（picture-card）的文件列表，按字段名分别维护
-const uploadFiles = reactive({})
-const previewVisible = ref(false)
-const previewUrl = ref('')
 
 const visibleFields = computed(() => props.fields.filter(f => {
 	if (f.addOnly && mode.value === 'edit') return false
@@ -263,9 +236,8 @@ async function resolveOptions() {
 	await Promise.all(tasks)
 }
 
-// silent 为静默刷新：不转圈、失败不弹错，避免自动同步打扰当前操作
-function fetchList(silent = false) {
-	if (!silent) loading.value = true
+function fetchList() {
+	loading.value = true
 	const params = { pageNo: pageNo.value, pageSize: pageSizeRef.value, ...props.extraParams }
 	for (const k in searchValues) {
 		if (searchValues[k] !== '' && searchValues[k] !== null && searchValues[k] !== undefined) {
@@ -276,16 +248,12 @@ function fetchList(silent = false) {
 		if (data.code === 200) {
 			records.value = data.content?.records || []
 			totalRow.value = data.content?.totalRow || 0
-		} else if (!silent) {
+		} else {
 			ElMessage.error(data.message || '查询失败')
 		}
 	}).catch(() => {
-		if (!silent) ElMessage.error('网络异常，无法加载数据')
-	}).finally(() => { if (!silent) loading.value = false })
-}
-
-function onPageChange() {
-	fetchList()
+		ElMessage.error('网络异常，无法加载数据')
+	}).finally(() => { loading.value = false })
 }
 
 function search() {
@@ -313,12 +281,6 @@ function buildForm(row) {
 		} else {
 			form[f.prop] = f.defaultValue !== undefined ? f.defaultValue : (f.type === 'switch' ? true : (f.type === 'number' ? (f.min ?? 0) : ''))
 		}
-		if (f.type === 'image') {
-			const url = form[f.prop]
-			uploadFiles[f.prop] = url
-				? [{ name: String(url).split('/').pop() || '头像', url, uid: Date.now() }]
-				: []
-		}
 	}
 }
 
@@ -334,55 +296,6 @@ function openEdit(row) {
 	dialogVisible.value = true
 }
 
-// ===== 图片上传（picture-card，默认限 1 张）=====
-function beforeImageUpload(file, f) {
-	const isImage = (file.type || '').startsWith('image/')
-	const maxMB = f.maxSize || 5
-	if (!isImage) { ElMessage.error('只能上传图片文件'); return false }
-	if (file.size / 1024 / 1024 > maxMB) { ElMessage.error(`图片大小不能超过 ${maxMB}MB`); return false }
-	return true
-}
-
-// 自定义上传：走 _axios 自动携带登录 token，成功后把服务端 URL 写回表单与缩略图
-async function doUpload(opt, f) {
-	const fd = new FormData()
-	fd.append('file', opt.file)
-	try {
-		const { data } = await _axios.request({ url: '/upload/image', method: 'POST', data: fd })
-		if (data.code === 200) {
-			const url = data.content
-			form[f.prop] = url
-			const item = (uploadFiles[f.prop] || []).find(x => x.uid === opt.file.uid)
-			if (item) { item.url = url; item.name = opt.file.name }
-			opt.onSuccess(data)
-			ElMessage.success('头像上传成功')
-		} else {
-			uploadFiles[f.prop] = (uploadFiles[f.prop] || []).filter(x => x.uid !== opt.file.uid)
-			form[f.prop] = ''
-			opt.onError(new Error(data.message || '上传失败'))
-			ElMessage.error(data.message || '上传失败')
-		}
-	} catch (e) {
-		uploadFiles[f.prop] = (uploadFiles[f.prop] || []).filter(x => x.uid !== opt.file.uid)
-		form[f.prop] = ''
-		opt.onError(e)
-		ElMessage.error('网络异常，头像上传失败')
-	}
-}
-
-function removeImage(file, f) {
-	form[f.prop] = ''
-}
-
-function previewImage(file) {
-	previewUrl.value = file.url
-	previewVisible.value = true
-}
-
-function onImageExceed() {
-	ElMessage.warning('最多只能上传 1 张头像，请先删除已有头像')
-}
-
 function save() {
 	formRef.value.validate(valid => {
 		if (!valid) return
@@ -393,8 +306,6 @@ function save() {
 			if (f.addOnly && mode.value === 'edit') continue
 			if (f.editOnly && mode.value === 'add') continue
 			const v = form[f.prop]
-			// 图片字段始终提交（含空串），这样删除头像后也能把清空同步到后端
-			if (f.type === 'image') { fd.append(f.prop, v || ''); continue }
 			if (v === null || v === undefined || v === '') continue
 			fd.append(f.prop, v)
 		}
@@ -436,49 +347,10 @@ function toggle(row) {
 	}).catch(() => {})
 }
 
-// 自动刷新：弹窗编辑期间暂停，避免列表变动干扰正在填写的表单
-function silentSync() {
-	if (props.autoRefresh > 0 && document.visibilityState === 'visible' && !dialogVisible.value) {
-		fetchList(true)
-	}
-}
-
-let autoTimer = null
 onMounted(async () => {
 	await resolveOptions()
 	fetchList()
-	if (props.autoRefresh > 0) {
-		autoTimer = setInterval(silentSync, props.autoRefresh)
-		window.addEventListener('focus', silentSync)
-		document.addEventListener('visibilitychange', silentSync)
-	}
-})
-
-onBeforeUnmount(() => {
-	if (autoTimer) clearInterval(autoTimer)
-	window.removeEventListener('focus', silentSync)
-	document.removeEventListener('visibilitychange', silentSync)
 })
 
 defineExpose({ refresh: fetchList })
 </script>
-
-<style scoped>
-.his-uploader :deep(.el-upload--picture-card) {
-	width: 100px;
-	height: 100px;
-	border-radius: 10px;
-}
-
-.his-uploader :deep(.el-upload-list--picture-card .el-upload-list__item) {
-	width: 100px;
-	height: 100px;
-	border-radius: 10px;
-}
-
-.preview-img {
-	width: 100%;
-	display: block;
-	border-radius: 8px;
-}
-</style>

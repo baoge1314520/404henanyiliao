@@ -3,10 +3,6 @@ server:
     enabled: false
   port: 8081
 spring:
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 10MB
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://192.168.109.130:5432/db1
@@ -27,10 +23,6 @@ spring:
       host: 127.0.0.1
       port: 6379
       database: 0
-# 本地文件上传（医生头像）存储目录，相对后端工作目录，可改为绝对路径
-his:
-  upload:
-    dir: uploads
 logging:
   level:
     com.neuedu.mapper: debug
