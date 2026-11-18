@@ -99,6 +99,16 @@ public class SysRegistration implements Serializable {
     private LocalDateTime callTime;
 
     /**
+     * 医生就诊时开具的用药说明
+     */
+    private String medication;
+
+    /**
+     * 医生就诊时写下的医嘱 / 建议
+     */
+    private String advice;
+
+    /**
      * 创建日期
      */
     private Date createDate;

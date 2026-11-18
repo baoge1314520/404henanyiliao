@@ -1,4 +1,4 @@
-// 登录态本地持久化：token + 用户信息 + 当前角色（admin 管理端 / patient 患者端）
+// 登录态本地持久化：token + 用户信息 + 当前角色（admin 管理端 / doctor 医生端 / patient 患者端）
 const TOKEN_KEY = 'his_token'
 const USER_KEY = 'his_user'
 const ROLE_KEY = 'his_role'
@@ -24,11 +24,12 @@ export function setUser(user) {
 }
 
 export function getRole() {
-	return localStorage.getItem(ROLE_KEY) === 'patient' ? 'patient' : 'admin'
+	const role = localStorage.getItem(ROLE_KEY)
+	return role === 'patient' || role === 'doctor' ? role : 'admin'
 }
 
 export function setRole(role) {
-	localStorage.setItem(ROLE_KEY, role === 'patient' ? 'patient' : 'admin')
+	localStorage.setItem(ROLE_KEY, role === 'patient' || role === 'doctor' ? role : 'admin')
 }
 
 export function clearAuth() {

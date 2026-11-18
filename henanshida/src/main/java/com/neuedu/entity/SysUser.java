@@ -84,6 +84,11 @@ public class SysUser implements Serializable {
     private String employeeNo;
 
     /**
+     * 角色: admin-管理员 doctor-医生（登录入口与接口权限按角色隔离）
+     */
+    private String role;
+
+    /**
      * 出生日期
      */
     private Date birthday;

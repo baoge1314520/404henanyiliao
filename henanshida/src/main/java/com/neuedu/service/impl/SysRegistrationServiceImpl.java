@@ -56,13 +56,19 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
 
     @Override
     public Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status, Long patientId) {
+        return list(pageNo, pageSize, patientName, regDate, status,
+                patientId == null ? null : Collections.singletonList(patientId));
+    }
+
+    @Override
+    public Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status, List<Long> patientIds) {
         int no = pageNo == null ? 1 : pageNo;
         int size = pageSize == null ? 10 : pageSize;
 
         QueryWrapper wrapper = QueryWrapper.create();
-        // 患者端"我的挂号"：只查本人记录
-        if (patientId != null) {
-            wrapper.eq("patient_id", patientId);
+        // 患者端"我的挂号"：只查本人与家人的记录
+        if (patientIds != null && !patientIds.isEmpty()) {
+            wrapper.in("patient_id", patientIds);
         }
         // 按患者姓名查询时，先查出患者ID集合，再过滤挂号记录
         if (StringUtils.isNotBlank(patientName)) {
@@ -82,11 +88,46 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
         if (StringUtils.isNotBlank(status)) {
             wrapper.eq("status", status.trim());
         }
-        wrapper.orderBy("id", false);
+        // 就诊日期倒序：最新就诊日的挂号排在最前，同日内按登记先后倒序
+        wrapper.orderBy("reg_date", false).orderBy("id", false);
 
-        Page<SysRegistration> page = this.page(Page.of(no, size), wrapper);
+        return fillVo(this.page(Page.of(no, size), wrapper));
+    }
+
+    @Override
+    public Page<RegistrationVO> listForDoctor(Integer pageNo, Integer pageSize, Long doctorId, String patientName,
+                                              String status, LocalDate dateFrom, LocalDate dateTo) {
+        int no = pageNo == null ? 1 : pageNo;
+        int size = pageSize == null ? 10 : pageSize;
+
+        QueryWrapper wrapper = QueryWrapper.create().eq("doctor_id", doctorId);
+        // 按患者姓名查询时，先查出患者ID集合，再过滤挂号记录
+        if (StringUtils.isNotBlank(patientName)) {
+            List<SysPatient> patients = sysPatientService.list(QueryWrapper.create().like("patient_name", patientName.trim()));
+            if (patients.isEmpty()) {
+                Page<RegistrationVO> empty = new Page<>(no, size, 0);
+                empty.setRecords(Collections.emptyList());
+                return empty;
+            }
+            wrapper.in("patient_id", patients.stream().map(SysPatient::getId).collect(Collectors.toList()));
+        }
+        if (StringUtils.isNotBlank(status)) {
+            wrapper.eq("status", status.trim());
+        }
+        if (dateFrom != null) {
+            wrapper.ge("reg_date", dateFrom);
+        }
+        if (dateTo != null) {
+            wrapper.le("reg_date", dateTo);
+        }
+        // 就诊日期倒序：未来预约在前，历史记录按时间倒推
+        wrapper.orderBy("reg_date", false).orderBy("id", false);
+        return fillVo(this.page(Page.of(no, size), wrapper));
+    }
+
+    /** 分页结果批量补全患者/科室/医生/职称名称 */
+    private Page<RegistrationVO> fillVo(Page<SysRegistration> page) {
         List<SysRegistration> records = page.getRecords();
-
         Page<RegistrationVO> result = new Page<>(page.getPageNumber(), page.getPageSize(), page.getTotalRow());
         if (records == null || records.isEmpty()) {
             result.setRecords(Collections.emptyList());
@@ -94,10 +135,10 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
         }
 
         Map<Long, SysPatient> patientMap = new HashMap<>();
-        List<Long> patientIds = records.stream().map(SysRegistration::getPatientId)
+        List<Long> recordPatientIds = records.stream().map(SysRegistration::getPatientId)
                 .filter(Objects::nonNull).distinct().collect(Collectors.toList());
-        if (!patientIds.isEmpty()) {
-            sysPatientService.list(QueryWrapper.create().in("id", patientIds))
+        if (!recordPatientIds.isEmpty()) {
+            sysPatientService.list(QueryWrapper.create().in("id", recordPatientIds))
                     .forEach(item -> patientMap.put(item.getId(), item));
         }
 
@@ -143,6 +184,8 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
             vo.setCreateDate(record.getCreateDate());
             vo.setCreateTime(record.getCreateTime());
             vo.setCallTime(record.getCallTime());
+            vo.setMedication(record.getMedication());
+            vo.setAdvice(record.getAdvice());
 
             SysPatient patient = patientMap.get(record.getPatientId());
             if (patient != null) {
@@ -237,7 +280,7 @@ public class SysRegistrationServiceImpl extends ServiceImpl<SysRegistrationMappe
 
     @Override
     public List<RegistrationVO> queue() {
-        Page<RegistrationVO> page = this.list(1, 500, null, null, "1", null);
+        Page<RegistrationVO> page = this.list(1, 500, null, null, "1", (Long) null);
         List<RegistrationVO> vos = new ArrayList<>(page.getRecords());
         // 未叫号的排前面，其余按就诊日期 + 挂号先后
         vos.sort((a, b) -> {

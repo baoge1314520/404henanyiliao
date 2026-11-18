@@ -81,29 +81,34 @@
 				<h2 class="form-title">{{ mode === 'login' ? '欢迎登录' : '创建账号' }}</h2>
 				<p class="form-sub">{{ formSub }}</p>
 
-				<!-- 角色选择：管理员 / 患者用户 -->
+				<!-- 角色选择：管理员 / 医生 / 患者用户 -->
 				<div class="role-switch">
 					<button type="button" :class="{ on: role === 'admin' }" @click="switchRole('admin')">
 						<el-icon :size="18"><Monitor /></el-icon>
 						<span class="role-name">管理员</span>
-						<span class="role-sub">医护 / 管理端</span>
+						<span class="role-sub">系统管理端</span>
+					</button>
+					<button type="button" :class="{ on: role === 'doctor' }" @click="switchRole('doctor')">
+						<el-icon :size="18"><UserFilled /></el-icon>
+						<span class="role-name">医生</span>
+						<span class="role-sub">排班 / 叫号 / 就诊</span>
 					</button>
 					<button type="button" :class="{ on: role === 'patient' }" @click="switchRole('patient')">
 						<el-icon :size="18"><Avatar /></el-icon>
 						<span class="role-name">患者用户</span>
-						<span class="role-sub">在线挂号 / 就诊记录</span>
+						<span class="role-sub">在线挂号 / 记录</span>
 					</button>
 				</div>
 
-				<!-- 模式切换 -->
-				<div class="mode-switch">
+				<!-- 模式切换（管理员仅登录，账号由系统内置） -->
+				<div v-if="role !== 'admin'" class="mode-switch">
 					<button :class="{ on: mode === 'login' }" @click="switchMode('login')">登 录</button>
 					<button :class="{ on: mode === 'register' }" @click="switchMode('register')">注 册</button>
 					<span class="thumb" :style="{ transform: mode === 'login' ? 'translateX(0)' : 'translateX(100%)' }"></span>
 				</div>
 
-				<!-- 管理员登录表单 -->
-					<el-form v-if="mode === 'login' && role === 'admin'" key="login" ref="loginRef" :model="loginForm" :rules="loginRules"
+				<!-- 管理员 / 医生登录表单（同一认证接口，后端按角色发证分流） -->
+					<el-form v-if="mode === 'login' && role !== 'patient'" key="login" ref="loginRef" :model="loginForm" :rules="loginRules"
 						size="large" @keyup.enter="doLogin">
 						<el-form-item prop="username">
 							<el-input v-model="loginForm.username" placeholder="手机号 / 邮箱 / 工号" :prefix-icon="User" clearable />
@@ -119,9 +124,9 @@
 							{{ loading ? '登录中…' : '立即登录' }} <el-icon v-if="!loading"><Right /></el-icon>
 						</el-button>
 						<div class="demo-card">
-							<div class="demo-title"><el-icon><InfoFilled /></el-icon> 演示账号（密码均为 123456）</div>
+							<div class="demo-title"><el-icon><InfoFilled /></el-icon> {{ role === 'doctor' ? '演示医生账号（密码均为 123456）' : '演示账号（密码均为 123456）' }}</div>
 							<div class="demo-accounts">
-								<button v-for="a in demoAccounts" :key="a" type="button" @click="fillDemo(a)">{{ a }}</button>
+								<button v-for="a in staffDemoAccounts" :key="a" type="button" @click="fillDemo(a)">{{ a }}</button>
 							</div>
 						</div>
 					</el-form>
@@ -150,8 +155,8 @@
 						</div>
 					</el-form>
 
-					<!-- 管理员注册表单 -->
-					<el-form v-else-if="role === 'admin'" key="register" ref="regRef" :model="regForm" :rules="regRules" size="large" @keyup.enter="doRegister">
+					<!-- 医生注册表单（注册即创建医生账号，管理员账号由系统内置） -->
+					<el-form v-else-if="role === 'doctor'" key="register" ref="regRef" :model="regForm" :rules="regRules" size="large" @keyup.enter="doRegister">
 						<el-form-item prop="realName">
 							<el-input v-model="regForm.realName" placeholder="真实姓名" :prefix-icon="Postcard" clearable />
 						</el-form-item>
@@ -171,7 +176,7 @@
 						<el-button class="submit-btn" type="primary" :loading="loading" @click="doRegister">
 							{{ loading ? '注册中…' : '注册并登录' }} <el-icon v-if="!loading"><Right /></el-icon>
 						</el-button>
-						<div class="form-tip">注册即创建一个启用状态的医护账号，手机号将作为登录账号。</div>
+						<div class="form-tip">注册即创建一个启用状态的医生账号，登录后进入医生工作站；手机号将作为登录账号。</div>
 					</el-form>
 
 					<!-- 患者注册表单 -->
@@ -204,7 +209,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Lock, FirstAidKit, InfoFilled, Right, Iphone, Postcard, Monitor, Avatar, CreditCard } from '@element-plus/icons-vue'
+import { User, Lock, FirstAidKit, InfoFilled, Right, Iphone, Postcard, Monitor, Avatar, CreditCard, UserFilled } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { usePatientStore } from '@/stores/patient'
 
@@ -214,11 +219,12 @@ const userStore = useUserStore()
 const patientStore = usePatientStore()
 
 const mode = ref('login')
-// 角色：admin 管理端 / patient 患者端，登录与注册都按角色分流
-const role = ref(route.query.role === 'patient' ? 'patient' : 'admin')
+// 角色：admin 管理端 / doctor 医生端 / patient 患者端，登录与注册都按角色分流
+const role = ref(route.query.role === 'patient' ? 'patient' : route.query.role === 'doctor' ? 'doctor' : 'admin')
 const loading = ref(false)
 const remember = ref(true)
-const demoAccounts = ['13800000001', '13800000002', '13800000003']
+// 演示账号按角色展示：管理员只有内置账号，医生展示普通医生账号
+const staffDemoAccounts = computed(() => role.value === 'doctor' ? ['13800000002', '13800000003'] : ['13800000001'])
 // 演示患者来自数据库真实建档数据，密码按约定取身份证后 6 位
 const patientDemoAccounts = [
 	{ name: '王建国', phone: '13810000000', password: '011000' },
@@ -230,7 +236,10 @@ const formSub = computed(() => {
 	if (role.value === 'patient') {
 		return mode.value === 'login' ? '智慧院区 · 患者服务门户' : '建档后即可在线挂号、查询就诊记录'
 	}
-	return mode.value === 'login' ? '河南师大医院管理系统' : '注册后即可登录使用全部功能'
+	if (role.value === 'doctor') {
+		return mode.value === 'login' ? '医生工作站 · 我的排班 / 今日就诊' : '注册医生账号，进入医生工作站'
+	}
+	return '河南师大医院管理系统'
 })
 
 const loginRef = ref(null)
@@ -302,6 +311,8 @@ function switchMode(m) {
 }
 function switchRole(r) {
 	role.value = r
+	// 管理员账号由系统内置，不开放注册
+	if (r === 'admin') mode.value = 'login'
 }
 function fillDemo(a) {
 	loginForm.username = a
@@ -318,12 +329,15 @@ function terms() {
 	ElMessageBox.alert('本系统为教学实训演示平台，数据仅供学习使用；请妥善保管账号，勿用于真实医疗场景。', '系统使用规范', { confirmButtonText: '我已了解' })
 }
 
-function redirectAfterAuth() {
-	const fallback = role.value === 'patient' ? '/patient/home' : '/dashboard'
+function redirectAfterAuth(actualRole) {
+	// 以后端返回的真实角色为准（医生从管理员页签登录也会进医生工作站）
+	const r = actualRole || role.value
+	const fallback = r === 'patient' ? '/patient/home' : r === 'doctor' ? '/doc/home' : '/dashboard'
 	let redirect = route.query.redirect || fallback
-	// 角色与目标页面不匹配时回落到各自首页，避免患者跳进管理端（反之亦然）
-	if (role.value === 'patient' && !redirect.startsWith('/patient')) redirect = fallback
-	if (role.value === 'admin' && redirect.startsWith('/patient')) redirect = fallback
+	// 角色与目标页面不匹配时回落到各自首页，避免串端
+	if (r === 'patient' && !redirect.startsWith('/patient')) redirect = fallback
+	if (r === 'doctor' && !redirect.startsWith('/doc')) redirect = fallback
+	if (r === 'admin' && (redirect.startsWith('/patient') || redirect.startsWith('/doc'))) redirect = fallback
 	router.replace(redirect)
 }
 
@@ -344,8 +358,10 @@ async function doLogin() {
 				const rememberKey = isPatient ? 'his_remember_patient' : 'his_remember_user'
 				if (remember.value) localStorage.setItem(rememberKey, account)
 				else localStorage.removeItem(rememberKey)
-				ElMessage.success(isPatient ? '登录成功，欢迎使用患者服务门户' : '登录成功，欢迎回来')
-				redirectAfterAuth()
+				const welcome = isPatient ? '登录成功，欢迎使用患者服务门户'
+					: res.role === 'doctor' ? '登录成功，欢迎进入医生工作站' : '登录成功，欢迎回来'
+				ElMessage.success(welcome)
+				redirectAfterAuth(res.role)
 			} else {
 				ElMessage.error(res.message)
 			}
@@ -378,8 +394,8 @@ async function doRegister() {
 					confirm: regForm.confirm
 				})
 			if (res.ok) {
-				ElMessage.success(isPatient ? '建档成功，已自动登录' : '注册成功，已自动登录')
-				redirectAfterAuth()
+				ElMessage.success(isPatient ? '建档成功，已自动登录' : '注册成功，已自动登录医生工作站')
+				redirectAfterAuth(res.role)
 			} else {
 				ElMessage.error(res.message)
 			}
@@ -598,10 +614,10 @@ onMounted(() => {
 	margin-bottom: 24px;
 }
 
-/* 角色选择：管理员 / 患者用户 */
+/* 角色选择：管理员 / 医生 / 患者用户 */
 .role-switch {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: repeat(3, 1fr);
 	gap: 10px;
 	margin-bottom: 16px;
 
@@ -610,7 +626,7 @@ onMounted(() => {
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 2px;
-		padding: 10px 14px;
+		padding: 10px 12px;
 		border: 1.5px solid #e2e8f0;
 		border-radius: 12px;
 		background: #fff;

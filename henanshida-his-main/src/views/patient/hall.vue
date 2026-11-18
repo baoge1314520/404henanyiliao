@@ -21,8 +21,15 @@
 			</button>
 		</div>
 
-		<!-- 科室 / 时段筛选 + 汇总 -->
+		<!-- 就诊人 / 科室 / 时段筛选 + 汇总 -->
 		<div class="filter-bar">
+			<div class="visitor-pick">
+				<span class="vp-label">就诊人</span>
+				<el-select v-model="visitorId" placeholder="选择就诊人" style="width: 180px">
+					<el-option v-for="v in visitors" :key="v.id" :label="v.label" :value="v.id" />
+				</el-select>
+				<el-button link type="primary" size="small" @click="$router.push('/patient/profile')">管理家人</el-button>
+			</div>
 			<el-select v-model="deptId" placeholder="选择科室" clearable style="width: 200px">
 				<el-option v-for="d in depts" :key="d.id" :label="d.deptName" :value="d.id" />
 			</el-select>
@@ -81,7 +88,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Sunny, Moon } from '@element-plus/icons-vue'
@@ -97,6 +104,22 @@ const loading = ref(false)
 const booking = ref(false)
 const depts = ref([])
 const deptId = ref(route.query.deptId ? Number(route.query.deptId) : null)
+// 就诊人：本人 + 已添加家人；个人中心「为TA挂号」会带 patientId 进入
+const visitorId = ref(route.query.patientId ? Number(route.query.patientId) : null)
+const visitors = computed(() => {
+	const arr = []
+	const p = patientStore.patient
+	if (p && p.id != null) arr.push({ id: p.id, patientName: p.patientName, label: `${p.patientName}（本人）` })
+	for (const m of (patientStore.family || [])) {
+		arr.push({ id: m.id, patientName: m.patientName, label: m.patientName })
+	}
+	return arr
+})
+const currentVisitor = computed(() => visitors.value.find(v => v.id === visitorId.value) || visitors.value[0] || null)
+// 本人档案就绪后默认就诊人为本人
+watch(() => patientStore.patient?.id, (id) => {
+	if (visitorId.value == null && id != null) visitorId.value = id
+}, { immediate: true })
 // 时段筛选：'' 全部 / '1' 上午 / '2' 下午
 const periodFilter = ref('')
 // 每天全量号源（不含科室过滤），日期条余号与卡片共用这份数据
@@ -195,9 +218,11 @@ async function loadDepts() {
 
 async function book(s) {
 	const period = s.regPeriod === '1' ? '上午' : '下午'
+	const visitor = currentVisitor.value
+	const visitorName = visitor ? visitor.patientName : patientStore.name
 	try {
 		await ElMessageBox.confirm(
-			`就诊人：${patientStore.name}` +
+			`就诊人：${visitorName}` +
 			`<br/>科室：${s.deptName}<br/>医生：${s.doctorName}（${s.titleName || '医师'}）` +
 			`<br/>时间：${s.scheduleDate} ${period}<br/>挂号费：¥${s.regFee != null ? s.regFee : '--'}`,
 			'确认挂号',
@@ -213,6 +238,7 @@ async function book(s) {
 		fd.append('regPeriod', s.regPeriod)
 		fd.append('doctorId', s.doctorId)
 		fd.append('deptId', s.deptId)
+		if (visitor && visitor.id != null) fd.append('patientId', visitor.id)
 		const { data } = await _axios.request({ url: '/patientAuth/book', method: 'POST', data: fd })
 		if (data.code !== 200) {
 			ElMessage.error(data.message || '挂号失败')
@@ -252,6 +278,7 @@ function onWake() {
 
 let timer = null
 onMounted(() => {
+	patientStore.loadFamily()
 	loadDepts()
 	loadAll()
 	timer = setInterval(() => {
@@ -367,6 +394,18 @@ onBeforeUnmount(() => {
 		font-size: 13.5px;
 		color: #64748b;
 		font-weight: 600;
+	}
+}
+
+.visitor-pick {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+
+	.vp-label {
+		font-size: 13.5px;
+		font-weight: 700;
+		color: #334155;
 	}
 }
 

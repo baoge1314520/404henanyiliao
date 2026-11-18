@@ -72,6 +72,12 @@ public class SysPatient implements Serializable {
     private Boolean enabled;
 
     /**
+     * 家人档案归属患者ID（sys_patient.id）：NULL 表示独立档案（自助注册/管理员建档），
+     * 非 NULL 表示由该患者在个人中心添加的家人，可为其代挂号
+     */
+    private Long ownerId;
+
+    /**
      * 创建日期
      */
     private Date createDate;

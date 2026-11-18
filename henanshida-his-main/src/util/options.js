@@ -29,7 +29,8 @@ export const titleOptions = cached(async () => {
 
 export const doctorOptions = cached(async () => {
 	const arr = await getArray('/sysUser/list', { pageNo: 1, pageSize: 500 })
-	return arr.map(u => ({ label: u.realName, value: u.id }))
+	// 保留 deptId，供排班等页面做医生-科室双向联动
+	return arr.map(u => ({ label: u.realName, value: u.id, deptId: u.deptId }))
 })
 
 export const menuOptions = cached(async () => {

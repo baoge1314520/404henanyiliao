@@ -17,6 +17,7 @@ public class TokenService {
 
     private static final String PREFIX = "login:token:";
     private static final String PATIENT_PREFIX = "patient:token:";
+    private static final String DOCTOR_PREFIX = "doctor:token:";
     private static final Duration TTL = Duration.ofHours(2);
 
     @Resource
@@ -45,6 +46,19 @@ public class TokenService {
 
     public void deletePatient(String token) {
         delete(PATIENT_PREFIX, token);
+    }
+
+    /** 医生端令牌：与管理端隔离，医生 token 只能访问 /doctorAuth/** ，不能进管理端 */
+    public String createDoctor(Long doctorId) {
+        return create(DOCTOR_PREFIX, doctorId);
+    }
+
+    public Long resolveDoctor(String token) {
+        return resolve(DOCTOR_PREFIX, token);
+    }
+
+    public void deleteDoctor(String token) {
+        delete(DOCTOR_PREFIX, token);
     }
 
     private String create(String prefix, Long id) {

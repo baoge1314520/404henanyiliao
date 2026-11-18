@@ -1,7 +1,7 @@
 <template>
 	<crud-table
 		api="/sysSchedule" title="排班" icon="Calendar"
-		subtitle="安排医生出诊日期、时段与号源数量"
+		subtitle="安排医生出诊日期、时段与号源数量；医生与科室双向自动匹配"
 		:search-fields="searchFields" :columns="columns" :fields="fields" />
 </template>
 
@@ -36,8 +36,27 @@ const columns = computed(() => [
 ])
 
 const fields = [
-	{ prop: 'doctorId', label: '医生', type: 'select', required: true, span: 12, loadOptions: doctorOptions },
-	{ prop: 'deptId', label: '科室', type: 'select', required: true, span: 12, loadOptions: deptOptions },
+	{
+		prop: 'doctorId', label: '医生', type: 'select', required: true, span: 12, loadOptions: doctorOptions,
+		placeholder: '请选择医生',
+		// 已选科室时只列该科室的医生；未选科室时列全部
+		filterOptions: (opts, form) => (form.deptId ? opts.filter(o => o.deptId === form.deptId) : opts),
+		// 选医生后自动匹配其所属科室
+		onChange: (form, val) => {
+			const doc = doctorOpts.value.find(o => o.value === val)
+			if (doc && doc.deptId != null) form.deptId = doc.deptId
+		}
+	},
+	{
+		prop: 'deptId', label: '科室', type: 'select', required: true, span: 12, loadOptions: deptOptions,
+		placeholder: '请选择科室',
+		// 改科室后，若已选医生不属于该科室则清空，避免医生与科室错配
+		onChange: (form, val) => {
+			if (!val) { form.doctorId = ''; return }
+			const doc = doctorOpts.value.find(o => o.value === form.doctorId)
+			if (form.doctorId && (!doc || doc.deptId !== val)) form.doctorId = ''
+		}
+	},
 	{ prop: 'scheduleDate', label: '排班日期', type: 'date', required: true, span: 12 },
 	{
 		prop: 'regPeriod', label: '时段', type: 'select', required: true, span: 12, defaultValue: '1',

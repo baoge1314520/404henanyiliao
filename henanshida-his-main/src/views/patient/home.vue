@@ -50,22 +50,13 @@
 				</div>
 			</div>
 		</div>
-
-		<!-- 温馨提示 -->
-		<div class="notice">
-			<el-icon class="n-icon"><InfoFilled /></el-icon>
-			<div>
-				<b>温馨提示（演示环境）</b>
-				<p>登录密码为身份证号后 6 位；挂号后请在支付宝沙箱完成支付，支付成功后状态自动变为「待就诊」；就诊日期当天及之前可在「我的挂号」自助退号。本系统为教学实训演示平台，数据仅供学习使用。</p>
-			</div>
-		</div>
 	</div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { FirstAidKit, OfficeBuilding, Tickets, InfoFilled } from '@element-plus/icons-vue'
+import { FirstAidKit, OfficeBuilding, Tickets } from '@element-plus/icons-vue'
 import { _axios } from '@/util/axios'
 import { usePatientStore } from '@/stores/patient'
 
@@ -80,12 +71,16 @@ const todayText = computed(() => {
 	return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 ${WEEK[d.getDay()]}`
 })
 
-const stats = computed(() => [
-	{ label: '累计挂号', value: records.value.length, color: '#2563eb' },
-	{ label: '待支付', value: records.value.filter(r => r.status === '0').length, color: '#f59e0b' },
-	{ label: '待就诊', value: records.value.filter(r => r.status === '1').length, color: '#0ea5e9' },
-	{ label: '已就诊', value: records.value.filter(r => r.status === '2').length, color: '#16a34a' }
-])
+// 统计口径与「我的挂号」一致：本人与家人的挂号记录合并计数
+const stats = computed(() => {
+	const all = records.value
+	return [
+		{ label: '累计挂号', value: all.length, color: '#2563eb' },
+		{ label: '待支付', value: all.filter(r => r.status === '0').length, color: '#f59e0b' },
+		{ label: '待就诊', value: all.filter(r => r.status === '1').length, color: '#0ea5e9' },
+		{ label: '已就诊', value: all.filter(r => r.status === '2').length, color: '#16a34a' }
+	]
+})
 
 const steps = [
 	{ title: '在线挂号', desc: '在挂号大厅选择日期、科室与医生，确认号源后提交' },
@@ -289,34 +284,6 @@ onMounted(() => {
 		background: #2563eb;
 		border-color: #2563eb;
 		color: #fff;
-	}
-}
-
-/* 提示 */
-.notice {
-	display: flex;
-	gap: 12px;
-	background: #fffbeb;
-	border: 1px solid #fde68a;
-	border-radius: 15px;
-	padding: 15px 18px;
-
-	.n-icon {
-		color: #f59e0b;
-		font-size: 20px;
-		margin-top: 2px;
-	}
-
-	b {
-		font-size: 13.5px;
-		color: #92400e;
-	}
-
-	p {
-		font-size: 12.5px;
-		color: #a16207;
-		line-height: 1.8;
-		margin-top: 4px;
 	}
 }
 

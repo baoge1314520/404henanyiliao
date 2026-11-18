@@ -7,7 +7,8 @@ import { getToken, setToken, getUser, setUser, setRole, clearAuth } from '@/util
 export const usePatientStore = defineStore('patient', {
 	state: () => ({
 		token: getToken(),
-		patient: getUser()
+		patient: getUser(),
+		family: []
 	}),
 	getters: {
 		isLogin: state => !!state.token,
@@ -52,6 +53,15 @@ export const usePatientStore = defineStore('patient', {
 			}
 			return data
 		},
+		async loadFamily() {
+			try {
+				const { data } = await _axios.request({ url: '/patientAuth/family', method: 'GET' })
+				if (data.code === 200) this.family = data.content || []
+			} catch {
+				// 家人列表加载失败不阻塞页面
+			}
+			return this.family
+		},
 		async logout() {
 			try {
 				await _axios.request({ url: '/patientAuth/logout', method: 'POST' })
@@ -60,6 +70,7 @@ export const usePatientStore = defineStore('patient', {
 			}
 			this.token = ''
 			this.patient = null
+			this.family = []
 			clearAuth()
 		}
 	}

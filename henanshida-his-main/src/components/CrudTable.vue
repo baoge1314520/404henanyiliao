@@ -107,8 +107,9 @@
 								<el-select
 									v-else-if="f.type === 'select'"
 									v-model="form[f.prop]" :placeholder="f.placeholder || `请选择${f.label}`"
-									clearable filterable style="width: 100%">
-									<el-option v-for="o in opts(f.prop)" :key="o.value" :label="o.label" :value="o.value" />
+									clearable filterable style="width: 100%"
+									@change="(val) => onFieldChange(f, val)">
+									<el-option v-for="o in dialogOpts(f)" :key="o.value" :label="o.label" :value="o.value" />
 								</el-select>
 								<el-date-picker
 									v-else-if="f.type === 'date'"
@@ -221,6 +222,17 @@ const rules = computed(() => {
 
 function opts(prop) {
 	return optionsMap[prop] || []
+}
+
+// 弹窗下拉选项：支持 filterOptions(全量选项, 当前表单) 按已填内容动态过滤（如医生随科室筛选）
+function dialogOpts(f) {
+	const base = optionsMap[f.prop] || []
+	return typeof f.filterOptions === 'function' ? f.filterOptions(base, form) : base
+}
+
+// 弹窗下拉变更钩子：把整个表单交给业务侧做联动（如选医生后自动匹配科室）
+function onFieldChange(f, val) {
+	if (typeof f.onChange === 'function') f.onChange(form, val)
 }
 
 function tagOf(col, val) {

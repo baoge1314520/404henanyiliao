@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getToken, clearAuth } from '@/util/auth'
+import { getToken, getRole, clearAuth } from '@/util/auth'
 
 export const _axios = axios.create({
 	baseURL: 'http://127.0.0.1:8081',
@@ -23,9 +23,10 @@ _axios.interceptors.response.use(
 		const data = response.data
 		if (data && data.code === 401 && !redirecting) {
 			redirecting = true
+			const role = getRole()
 			clearAuth()
 			const back = encodeURIComponent(location.pathname + location.search)
-			location.replace('/login?redirect=' + back)
+			location.replace('/login?redirect=' + back + (role !== 'admin' ? '&role=' + role : ''))
 			setTimeout(() => { redirecting = false }, 1500)
 		}
 		return response

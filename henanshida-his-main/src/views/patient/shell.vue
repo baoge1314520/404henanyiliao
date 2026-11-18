@@ -46,6 +46,7 @@
 								<el-dropdown-item command="home" :icon="HomeFilled">首页</el-dropdown-item>
 								<el-dropdown-item command="hall" :icon="OfficeBuilding">挂号大厅</el-dropdown-item>
 								<el-dropdown-item command="records" :icon="Tickets">我的挂号</el-dropdown-item>
+								<el-dropdown-item command="profile" :icon="User">个人中心</el-dropdown-item>
 								<el-dropdown-item command="ai" :icon="ChatDotRound">天使宝宝ai</el-dropdown-item>
 								<el-dropdown-item command="logout" divided :icon="SwitchButton">退出登录</el-dropdown-item>
 							</el-dropdown-menu>
@@ -75,7 +76,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import {
 	FirstAidKit, Refresh, ArrowDown, HomeFilled, OfficeBuilding, Tickets,
-	ChatDotRound, SwitchButton
+	ChatDotRound, SwitchButton, User
 } from '@element-plus/icons-vue'
 import AiAngelWidget from '@@/angel/AiAngelWidget.vue'
 import { usePatientStore } from '@/stores/patient'
@@ -89,12 +90,14 @@ const aiWidget = useAiWidgetStore()
 const menus = [
 	{ path: '/patient/home', title: '首页', icon: HomeFilled },
 	{ path: '/patient/hall', title: '挂号大厅', icon: OfficeBuilding },
-	{ path: '/patient/records', title: '我的挂号', icon: Tickets }
+	{ path: '/patient/records', title: '我的挂号', icon: Tickets },
+	{ path: '/patient/profile', title: '个人中心', icon: User }
 ]
 
 onMounted(() => {
-	// 拉取最新患者档案（失败不阻塞页面）
+	// 拉取最新患者档案与家人列表（失败不阻塞页面）
 	patientStore.fetchInfo().catch(() => {})
+	patientStore.loadFamily().catch(() => {})
 })
 
 function reload() {
@@ -118,6 +121,8 @@ function onCommand(cmd) {
 		router.push('/patient/hall')
 	} else if (cmd === 'records') {
 		router.push('/patient/records')
+	} else if (cmd === 'profile') {
+		router.push('/patient/profile')
 	}
 }
 </script>

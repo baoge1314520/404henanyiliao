@@ -20,6 +20,18 @@ public interface SysRegistrationService extends IService<SysRegistration> {
     Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status, Long patientId);
 
     /**
+     * 同上，但按患者ID集合过滤（患者端"本人与家人"的挂号记录）。patientIds 为 null 时不过滤。
+     */
+    Page<RegistrationVO> list(Integer pageNo, Integer pageSize, String patientName, String regDate, String status, java.util.List<Long> patientIds);
+
+    /**
+     * 医生端历史记录：本人名下全部日期的挂号分页（含未来预约），
+     * 支持患者姓名、状态、就诊日期范围过滤，就诊日期倒序。
+     */
+    Page<RegistrationVO> listForDoctor(Integer pageNo, Integer pageSize, Long doctorId, String patientName,
+                                       String status, java.time.LocalDate dateFrom, java.time.LocalDate dateTo);
+
+    /**
      * 挂号：患者不存在时与挂号记录一起保存，已存在则直接复用患者档案。
      */
     boolean add(SysRegistration registration, SysPatient patient);

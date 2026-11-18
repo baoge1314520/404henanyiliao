@@ -4,9 +4,19 @@
 		<div class="page-head">
 			<div>
 				<h2>我的挂号</h2>
-				<p>查看本人在线预约与就诊记录，就诊前一天可自助退号</p>
+				<p>查看本人与家人的预约及就诊记录，未过就诊日期可自助退号</p>
 			</div>
 			<el-button :icon="Refresh" :loading="loading" @click="fetchList()">刷新</el-button>
+		</div>
+
+		<!-- 就诊人筛选 -->
+		<div class="person-bar">
+			<span class="pb-label">就诊人</span>
+			<el-select v-model="personFilter" style="width: 210px">
+				<el-option label="全部（本人 + 家人）" value="all" />
+				<el-option v-for="p in persons" :key="p.id" :label="p.self ? `${p.name}（本人）` : p.name" :value="String(p.id)" />
+			</el-select>
+			<span class="pb-tip">家人代挂号记录与本人合并展示，可在此切换查看</span>
 		</div>
 
 		<!-- 状态筛选 -->
@@ -22,6 +32,13 @@
 		<div class="table-card" v-loading="loading">
 			<el-table :data="shown" stripe style="width: 100%">
 				<el-table-column prop="regNo" label="挂号单号" min-width="190" show-overflow-tooltip />
+				<el-table-column label="就诊人" min-width="120">
+					<template #default="{ row }">
+						<span>{{ row.patientName || '—' }}</span>
+						<el-tag v-if="selfId != null && row.patientId === selfId" size="small" effect="plain" type="primary" class="who-tag">本人</el-tag>
+						<el-tag v-else size="small" effect="plain" type="warning" class="who-tag">家人</el-tag>
+					</template>
+				</el-table-column>
 				<el-table-column prop="deptName" label="科室" min-width="100" />
 				<el-table-column prop="doctorName" label="医生" min-width="90" />
 				<el-table-column label="就诊时间" min-width="150">
@@ -39,11 +56,17 @@
 						<span v-else class="muted">—</span>
 					</template>
 				</el-table-column>
-				<el-table-column label="诊断结果" min-width="100">
-					<template #default><span class="muted">—</span></template>
+				<el-table-column label="用药" min-width="140" show-overflow-tooltip>
+					<template #default="{ row }">
+						<span v-if="row.medication">{{ row.medication }}</span>
+						<span v-else class="muted">—</span>
+					</template>
 				</el-table-column>
-				<el-table-column label="医嘱" min-width="90">
-					<template #default><span class="muted">—</span></template>
+				<el-table-column label="医嘱 / 建议" min-width="140" show-overflow-tooltip>
+					<template #default="{ row }">
+						<span v-if="row.advice">{{ row.advice }}</span>
+						<span v-else class="muted">—</span>
+					</template>
 				</el-table-column>
 				<el-table-column label="操作" width="150" align="center" fixed="right">
 					<template #default="{ row }">
@@ -67,11 +90,15 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { _axios } from '@/util/axios'
+import { usePatientStore } from '@/stores/patient'
 
 const router = useRouter()
+const patientStore = usePatientStore()
 const loading = ref(false)
 const records = ref([])
 const tab = ref('all')
+const personFilter = ref('all')
+const selfId = computed(() => patientStore.patient?.id ?? null)
 
 const tabs = [
 	{ key: 'all', label: '全部' },
@@ -91,9 +118,22 @@ function statusOf(s) {
 	return STATUS[s] || { label: s || '未知', type: 'info' }
 }
 
-const shown = computed(() => tab.value === 'all' ? records.value : records.value.filter(r => r.status === tab.value))
+const persons = computed(() => {
+	const map = new Map()
+	for (const r of records.value) {
+		if (r.patientId == null) continue
+		if (!map.has(r.patientId)) {
+			map.set(r.patientId, { id: r.patientId, name: r.patientName || '未知', self: selfId.value != null && r.patientId === selfId.value })
+		}
+	}
+	return [...map.values()]
+})
+const personScoped = computed(() => personFilter.value === 'all'
+	? records.value
+	: records.value.filter(r => String(r.patientId) === personFilter.value))
+const shown = computed(() => tab.value === 'all' ? personScoped.value : personScoped.value.filter(r => r.status === tab.value))
 function countOf(key) {
-	return key === 'all' ? records.value.length : records.value.filter(r => r.status === key).length
+	return key === 'all' ? personScoped.value.length : personScoped.value.filter(r => r.status === key).length
 }
 
 function todayStr() {
@@ -217,6 +257,29 @@ onBeforeUnmount(() => {
 	gap: 8px;
 	margin-bottom: 14px;
 	flex-wrap: wrap;
+}
+
+.person-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+	flex-wrap: wrap;
+
+	.pb-label {
+		font-size: 13.5px;
+		font-weight: 700;
+		color: #334155;
+	}
+
+	.pb-tip {
+		font-size: 12.5px;
+		color: #94a3b8;
+	}
+}
+
+.who-tag {
+	margin-left: 6px;
 }
 
 .tab {

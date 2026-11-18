@@ -50,7 +50,10 @@ public class AuthController {
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             return Result.fail("账号或密码错误");
         }
-        String token = tokenService.create(user.getId());
+        // 按角色发证：医生走 doctor:token: 前缀，与管理端令牌隔离，医生 token 进不了管理端接口
+        String token = "doctor".equals(user.getRole())
+                ? tokenService.createDoctor(user.getId())
+                : tokenService.create(user.getId());
         SysUser touch = SysUser.builder().id(user.getId()).loginTime(LocalDateTime.now()).build();
         sysUserService.updateById(touch);
         user.setPassword(null);
@@ -84,6 +87,7 @@ public class AuthController {
                 .phone(p)
                 .employeeNo("U" + now)
                 .gender("0")
+                .role("doctor")
                 .enabled(true)
                 .createDate(new java.sql.Date(now))
                 .createTime(new java.sql.Time(now))
@@ -93,8 +97,8 @@ public class AuthController {
         if (!sysUserService.add(user, password)) {
             return Result.fail("注册失败，请稍后重试");
         }
-        // 注册成功即自动登录，直接发令牌
-        String token = tokenService.create(user.getId());
+        // 注册成功即自动登录，直接发令牌（注册账号为医生角色）
+        String token = tokenService.createDoctor(user.getId());
         user.setPassword(null);
         Map<String, Object> content = new LinkedHashMap<>();
         content.put("token", token);
